@@ -1,5 +1,5 @@
 from types import *
-from data_loader import MonkbrillDataset
+from monkbrill_dataset import MonkbrillDataset
 from training import Trainer, Metrics
 
 import torch.nn as nn 
