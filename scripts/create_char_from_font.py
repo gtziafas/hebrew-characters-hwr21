@@ -2,7 +2,8 @@
 from PIL import Image, ImageFont, ImageDraw
 
 #Load the font and set the font size to 42
-font = ImageFont.truetype('Habbakuk.ttf', 42)
+font = ImageFont.truetype('data/habbakuk/Habbakuk.TTF', 42)
+
 
 #Character mapping for each of the 27 tokens
 char_map = {'Alef' : ')', 
@@ -50,5 +51,6 @@ def create_image(label, img_size):
 
 #Create a 50x50 image of the Alef token and save it to disk
 #To get the raw data cast it to a numpy array
-img = create_image('Alef', (50, 50))
-img.save('example_alef.png')
+for c in list(char_map.keys()):
+    img = create_image(c, (50, 50))
+    img.save(f'./dump/example2_{c}.png')
