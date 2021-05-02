@@ -1,19 +1,6 @@
 from .types import *
-import numpy as np  
-import cv2 
-
+from .utils import show
 from torchvision.datasets import ImageFolder
-
-
-def show(img: array, legend: Maybe[str] = None):
-    legend = 'unlabeled' if legend is None else legend
-    cv2.imshow(legend, img)
-    while 1:
-        key = cv2.waitKey(1) & 0xff
-        if key == ord('q'):
-            break
-    cv2.destroyWindow(legend)
-
 
 
 class MonkbrillDataset(ABC):

@@ -2,6 +2,8 @@ from .types import *
 from .monkbrill_dataset import MonkbrillDataset
 from .training import Trainer, Metrics
 
+import cv2
+import numpy as np
 import torch.nn as nn 
 from torch import tensor, stack, manual_seed
 from torch.optim import AdamW, Adam
@@ -18,6 +20,7 @@ class BaselineCNN(nn.Module):
 
     def forward(self, x: Tensor) -> Tensor:
         ...
+    
 
 
 def collate(batch: List[Character], ..., device: str) -> Tuple[Tensor, Tensor]:

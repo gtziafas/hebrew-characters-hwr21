@@ -11,7 +11,8 @@ from torch.utils.data import DataLoader
 from torch.optim import Optimizer 
 
 
-CHARACTER_NAMES = {k: v for k, v in enumerate(['Alef',
+LABEL_MAP = {None: 'nan', **{k: v for k, v in enumerate([
+ 'Alef',
  'Ayin',
  'Bet',
  'Dalet',
@@ -37,7 +38,7 @@ CHARACTER_NAMES = {k: v for k, v in enumerate(['Alef',
  'Tsadi-medial',
  'Waw',
  'Yod',
- 'Zayin'])}
+ 'Zayin'])}}
 
 
 @dataclass
@@ -49,4 +50,29 @@ class Character:
     def __init__(self, image: array, label: Maybe[int] = None):
         self.image = image 
         self.label = label
-        self.name = CHARACTER_NAMES[self.label]
+        self.name = LABEL_MAP[self.label]
+
+
+Line = List[Character]
+
+
+@dataclass 
+class Box:
+    # coordinates in (x,y) cv2-like frame
+    top: int 
+    left: int
+    right: int 
+    bottom: int 
+
+
+
+class Model(ABC):
+
+    def preprocess(self, image: array) -> List[Line]:
+        ...
+
+    def predict_line(self, line: Line) -> List[str]:
+        ...
+
+    def predict(self, lines: List[Line]) -> List[List[str]]:
+        return list(map(predict_line, lines))
