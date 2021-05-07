@@ -1,5 +1,5 @@
-from .types import *
-from .utils import show
+from qumran_seagulls.types import *
+from qumran_seagulls.utils import show
 from torchvision.datasets import ImageFolder
 
 
