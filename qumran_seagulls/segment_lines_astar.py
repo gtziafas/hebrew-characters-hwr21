@@ -1,9 +1,11 @@
 import numpy
 import cv2
 import matplotlib.pyplot as plt
-from scipy.signal import find_peaks_cwt
+from persistence1d import RunPersistence
 
 debug = True
+min_persistence = 150
+
 
 def segment_img(image):
     histogram = numpy.sum(image, axis=1)
@@ -11,6 +13,11 @@ def segment_img(image):
         plt.imshow(image)
         plt.plot(histogram, range(len(histogram)))
 
+    extrema = RunPersistence(histogram)
+    filtered_extrema = [t[0] for t in extrema if t[1] > min_persistence]
+    sorted_extrema = sorted(filtered_extrema)
+
+    plt.plot(histogram[sorted_extrema], sorted_extrema, "x")
 
     if debug:
         plt.show()
