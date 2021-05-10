@@ -53,26 +53,23 @@ class Character:
         self.name = LABEL_MAP[self.label]
 
 
-Line = List[Character]
-
-
 @dataclass 
 class Box:
     # coordinates in (x,y) cv2-like frame
-    top: int 
-    left: int
-    right: int 
-    bottom: int 
-
+    x: int 
+    y: int
+    h: int 
+    w: int 
 
 
 class Model(ABC):
 
-    def preprocess(self, image: array) -> List[Line]:
+    def preprocess(self, image: array) -> List[List[List[array]]]:
+        # from full image -> lines x words x character images
         ...
 
-    def predict_line(self, line: Line) -> List[str]:
+    def predict_line(self, line: array) -> List[str]:
         ...
 
-    def predict(self, lines: List[Line]) -> List[List[str]]:
+    def predict(self, lines: List[List[array]]) -> List[List[str]]:
         return list(map(predict_line, lines))
