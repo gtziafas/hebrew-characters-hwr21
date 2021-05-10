@@ -1,16 +1,24 @@
 from qumran_seagulls.types import *
 from qumran_seagulls.utils import show
+
 from torchvision.datasets import ImageFolder
 
 
 class MonkbrillDataset(ABC):
-    def __init__(self, root: str):
+    def __init__(self, 
+                 root: str, 
+                 with_preproc: Maybe[Callable[[List[array]], List[array]]] = None
+                ):
+        self.with_preproc = with_preproc
         self.dataset = self.load_from_folders(root)
     
     def load_from_folders(self, root: str) -> List[Character]:
         dataset = ImageFolder(root=root)
         # return only first channel as images are binary anyway
-        return [Character(image=array(x)[..., 0], label=y) for x, y in dataset]
+        imgs, labels = zip(*[(array(x)[..., 0], y) for x, y in dataset])
+        # apply desired preprocessing if given
+        imgs = self.with_preproc(imgs) if self.with_preproc is not None else imgs
+        return [Character(image=x, label=y) for x, y in zip(imgs, labels)]
 
     def __getitem__(self, n: int) -> Character:
         return self.dataset[n]
