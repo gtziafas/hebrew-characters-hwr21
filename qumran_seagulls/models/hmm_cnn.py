@@ -1,4 +1,4 @@
-from .types import *
+from ..types import *
 
 import torch.nn as nn
 import torch

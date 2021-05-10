@@ -1,4 +1,4 @@
-from qumran_seagulls.types import *
+from ..types import *
 
 import torch
 import torch.nn as nn 
