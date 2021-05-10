@@ -1,4 +1,4 @@
-from .types import *
+from qumran_seagulls.types import *
 
 import torch
 import torch.nn as nn 
@@ -44,7 +44,7 @@ class Trainer(ABC):
             optimizer: Optimizer, 
             criterion: nn.Module, 
             target_metric: str,
-            print_log: bool = True,
+            print_log: bool = False,
             early_stopping: int = 0):
         self.model = model
         self.optimizer = optimizer
