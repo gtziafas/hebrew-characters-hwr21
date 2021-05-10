@@ -14,24 +14,6 @@ PEAKS_MERGE_THRESH = 10
 WIDTH_SCALER = 0.7
 
 
-# step 1
-def denoise(img: array, kernel: Tuple[int, int], area_thresh: int) -> array:
-    # threshold and inverse
-    _, thresh = cv2.threshold(img, 0, 0xff, cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
-
-    # morphology
-    kernel = np.ones(kernel, np.uint8)
-    thresh =  cv2.erode(thresh, kernel, iterations=1)
-
-    # remove small blobs
-    contours, _  = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    contours = [c for c in contours if cv2.contourArea(c) < area_thresh]
-    mask = np.zeros_like(thresh)
-    for c in contours:
-        mask = cv2.drawContours(mask, [c], 0, 0xff, -1)
-    thresh[mask==0xff] = 0
-    return thresh
-
 
 # identify consecutive 0s in a 1-d array
 def zero_runs(arr: array) -> List[List[int]]:
