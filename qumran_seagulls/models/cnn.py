@@ -5,7 +5,7 @@ import cv2
 import numpy as np
 import torch.nn as nn 
 import torch.nn.functional as F
-from torch import tensor, stack, no_grad
+from torch import tensor, stack, no_grad, load
 
 
 class BaselineCNN(nn.Module):
@@ -37,12 +37,18 @@ class BaselineCNN(nn.Module):
         return self.cls(x)
 
     @no_grad()
-    def predict(self, imgs: List[array], device: str='cpu') -> str:
-        padded = crop_boxes_fixed(self.inp_shape)(imgs)
+    def predict_scores(self, imgs: List[array], device: str='cpu') -> array:
+        self.eval()
+        padded = pad_imgs_in_batch(img, self.inp_shape)
         padded = [(img / 0xff).astype(np.float) for img in padded]
         tensorized = stack([tensor(img, dtype=floatt, device=device) for img in padded])
-        predictions = self.forward(tensorized)
-        return predictions.argmax(dim=-1)
+        scores = self.forward(tensorized.unsqueeze(1))
+        return scores.cpu().numpy()
+
+    @no_grad()
+    def predict(self, imgs: List[array], device: str='cpu') -> List[str]:
+        predictions = self.predict_scores(imgs, device).argmax(-1)
+        return [LABEL_MAP[label] for label in predictions]
 
 
 def pad_imgs_in_batch(batch: List[array], desired_shape: Tuple[int, int]) -> List[array]:
@@ -80,5 +86,12 @@ def collate(device: str, with_padding: Maybe[Tuple[int, int]]=None) -> Callable[
     return _collate
 
 
-def default_cnn():
-    return BaselineCNN(num_classes=27, dropout_rates=[0, 0], inp_shape=(75, 75))
+def default_cnn() -> BaselineCNN:
+    return BaselineCNN(num_classes=27, dropout_rates=[0.1, 0.25], inp_shape=(75, 75))
+
+
+def load_pretrained(path: str) -> BaselineCNN:
+    model = default_cnn()
+    checkpoint = load(path)
+    model.load_state_dict(checkpoint)
+    return model

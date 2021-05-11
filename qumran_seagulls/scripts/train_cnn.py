@@ -19,13 +19,13 @@ FIXED_SHAPE = (75, 75)
 
 def main(data_root: str,
          batch_size: int, 
-         lr: float, 
-         #dropout: float, 
+         lr: float,  
          num_epochs: int,
-         early_stopping: int,
          kfold: int,
          wd: float,
          device: str,
+         early_stopping: Maybe[int],
+         save_path: Maybe[str],
          print_log: bool):
 
     # an independent function to init a model and train over some epochs for a given train-dev split
@@ -40,7 +40,7 @@ def main(data_root: str,
         trainer = Trainer(model, (train_dl, dev_dl), optim, criterion, target_metric="accuracy", \
             print_log=print_log, early_stopping=early_stopping)
 
-        return trainer.iterate(num_epochs)
+        return trainer.iterate(num_epochs, with_save=save_path)
 
 
     print('Loading / Preprocessing dataset...')
@@ -75,11 +75,10 @@ if __name__ == "__main__":
     parser.add_argument('-d', '--device', help='cpu or cuda', type=str, default='cuda')
     parser.add_argument('-bs', '--batch_size', help='batch size to use for training', type=int, default=64)
     parser.add_argument('-e', '--num_epochs', help='how many epochs of training', type=int, default=20)
-    #parser.add_argument('-s', '--save_path', help='where to save best model', type=str, default=f'{SAVE_PREFIX}/COVID-19-event/checkpoints')
-    #parser.add_argument('-dr', '--dropout', help='model dropout to use in training', type=float, default=0.5)
-    parser.add_argument('-wd', '--wd', help='weight decay to use for regularization', type=float, default=0.)
+    parser.add_argument('-s', '--save_path', help='full path to save best model', type=str, default=None)
+    parser.add_argument('-wd', '--wd', help='weight decay to use for regularization', type=float, default=1e-02)
     parser.add_argument('-lr', '--lr', help='learning rate to use for optimization', type=float, default=1e-03)
-    parser.add_argument('-early', '--early_stopping', help='early stop patience (default no)', type=int, default=0)
+    parser.add_argument('-early', '--early_stopping', help='early stop patience (default no)', type=int, default=None)
     parser.add_argument('-kfold', '--kfold', help='k-fold cross validation', type=int, default=0)
     parser.add_argument('--print_log', action='store_true', help='print training logs', default=False)
 
