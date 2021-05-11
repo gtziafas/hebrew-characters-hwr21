@@ -20,7 +20,7 @@ def train_epoch(model: nn.Module, dl: DataLoader, optim: Optimizer, criterion: n
         # update
         epoch_loss += loss.item()
         accuracy += (preds.argmax(dim=-1) == y).sum().item() / y.shape[0]
-    return {'loss': round(epoch_loss / len(dl), 5), 'accuracy': round(accuracy / len(dl), 4) * 100}
+    return {'loss': round(epoch_loss / len(dl), 5), 'accuracy': round(accuracy / len(dl), 4)}
 
 
 @torch.no_grad()
@@ -34,7 +34,7 @@ def eval_epoch(model: nn.Module, dl: DataLoader, criterion: nn.Module) -> Metric
         # update
         epoch_loss += loss.item()
         accuracy += (preds.argmax(dim=-1) == y).sum().item() / y.shape[0]
-    return {'loss': round(epoch_loss / len(dl), 5), 'accuracy': round(accuracy / len(dl), 4) * 100}
+    return {'loss': round(epoch_loss / len(dl), 5), 'accuracy': round(accuracy / len(dl), 4)}
 
 
 class Trainer(ABC):
