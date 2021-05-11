@@ -58,8 +58,8 @@ class Box:
     # coordinates in (x,y) cv2-like frame
     x: int 
     y: int
-    h: int 
     w: int 
+    h: int 
 
 
 class Model(ABC):
