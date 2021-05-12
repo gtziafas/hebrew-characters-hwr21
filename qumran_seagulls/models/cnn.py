@@ -1,5 +1,5 @@
 from ..types import *
-from ..utils import crop_boxes_fixed
+from ..utils import pad_with_frame, filter_large
 
 import cv2
 import numpy as np
@@ -39,31 +39,17 @@ class BaselineCNN(nn.Module):
     @no_grad()
     def predict_scores(self, imgs: List[array], device: str='cpu') -> array:
         self.eval()
-        padded = pad_imgs_in_batch(img, self.inp_shape)
-        padded = [(img / 0xff).astype(np.float) for img in padded]
-        tensorized = stack([tensor(img, dtype=floatt, device=device) for img in padded])
+        filtered = filter_large(self.inp_shape)(imgs)
+        padded = pad_with_frame(filtered, self.inp_shape)
+        normalized = [(img / 0xff).astype(np.float) for img in padded]
+        tensorized = stack([tensor(img, dtype=floatt, device=device) for img in normalized])
         scores = self.forward(tensorized.unsqueeze(1))
-        return scores.cpu().numpy()
+        return scores
 
     @no_grad()
     def predict(self, imgs: List[array], device: str='cpu') -> List[str]:
         predictions = self.predict_scores(imgs, device).argmax(-1)
         return [LABEL_MAP[label] for label in predictions]
-
-
-def pad_imgs_in_batch(batch: List[array], desired_shape: Tuple[int, int]) -> List[array]:
-    shapes = [img.shape for img in batch]
-
-    # have fixed resolution frame
-    center = (desired_shape[0] // 2, desired_shape[1] // 2)
-
-    # paste every image in the center of the fixed resolution frame to pad all images
-    offsets = [(center[0] - shape[0] // 2, center[1] - shape[1] // 2) for shape in shapes]
-    batch_padded = []
-    for img, shape, offset in zip(batch, shapes, offsets):
-        batch_padded.append(np.zeros((desired_shape[0], desired_shape[1])))
-        batch_padded[-1][offset[0] : offset[0] + shape[0], offset[1] : offset[1] + shape[1]] = img 
-    return batch_padded
 
 
 def collate(device: str, with_padding: Maybe[Tuple[int, int]]=None) -> Callable[[List[Character]], Tuple[Tensor, Tensor]]:
@@ -73,7 +59,7 @@ def collate(device: str, with_padding: Maybe[Tuple[int, int]]=None) -> Callable[
     
         # pad to equal size if desired
         if with_padding is not None:
-            imgs = pad_imgs_in_batch(imgs, desired_shape=with_padding)
+            imgs = pad_with_frame(imgs, desired_shape=with_padding)
 
         # normalize images to [0, 1] range
         imgs = [(img / 0xff).astype(np.float) for img in imgs]

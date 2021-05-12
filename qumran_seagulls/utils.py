@@ -38,15 +38,19 @@ def denoise(img: array, kernel: Tuple[int, int], area_thresh: int) -> array:
     return thresh
 
 
-def paste_in_frame(img: array, desired_shape: Tuple[int, int]) -> array:
-    # construct a frame of desired resolution
-    H, W = desired_shape
-    frame = np.zeros((H, W))
+def pad_with_frame(img: List[array], desired_shape: Tuple[int, int]) -> List[array]:
+    
+    def _pad_with_frame(img: array) -> array:
+        # construct a frame of desired resolution
+        H, W = desired_shape
+        frame = np.zeros((H, W))
 
-    # paste image in the center of the frame
-    startx, starty = (H - img.shape[0]) // 2, (W - img.shape[1]) // 2
-    frame[startx : startx + img.shape[0], starty :  starty + img.shape[1]] = img
-    return frame
+        # paste image in the center of the frame
+        startx, starty = (H - img.shape[0]) // 2, (W - img.shape[1]) // 2
+        frame[startx : startx + img.shape[0], starty :  starty + img.shape[1]] = img
+        return frame
+
+    return list(map(_pad_with_frame, imgs))
 
 
 def filter_large(desired_shape: Tuple[int, int]) -> Callable[[List[array]], List[array]]:
@@ -113,7 +117,7 @@ def crop_boxes_fixed(desired_shape: Tuple[int, int]) -> Callable[[List[array]], 
                 box = Box(cx - min(width, W)//2, cy - min(height, H)//2, min(W, width), min(H, height))
                 img = crop_box(img, box)
 
-            frames.append(paste_in_frame(img, desired_shape))
+            frames.append(pad_with_frame([img], desired_shape)[0])
 
         return frames
 
