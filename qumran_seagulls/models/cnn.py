@@ -1,8 +1,6 @@
 from ..types import *
 from ..utils import pad_with_frame, filter_large
 
-import cv2
-import numpy as np
 import torch.nn as nn 
 import torch.nn.functional as F
 from torch import tensor, stack, no_grad, load
@@ -41,7 +39,7 @@ class BaselineCNN(nn.Module):
         self.eval()
         filtered = filter_large(self.inp_shape)(imgs)
         padded = pad_with_frame(filtered, self.inp_shape)
-        normalized = [(img / 0xff).astype(np.float) for img in padded]
+        normalized = [(img / 0xff).astype(float) for img in padded]
         tensorized = stack([tensor(img, dtype=floatt, device=device) for img in normalized])
         scores = self.forward(tensorized.unsqueeze(1))
         return scores
@@ -62,7 +60,7 @@ def collate(device: str, with_padding: Maybe[Tuple[int, int]]=None) -> Callable[
             imgs = pad_with_frame(imgs, desired_shape=with_padding)
 
         # normalize images to [0, 1] range
-        imgs = [(img / 0xff).astype(np.float) for img in imgs]
+        imgs = [(img / 0xff).astype(float) for img in imgs]
 
         # tensorize, send to device, add channel dimension and stack
         imgs = stack([tensor(img, dtype=floatt, device=device) for img in imgs], dim=0).unsqueeze(1)
