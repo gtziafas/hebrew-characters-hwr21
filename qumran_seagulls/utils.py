@@ -1,6 +1,6 @@
 from .types import *
 
-###  OpenCV utils #####
+#####  OpenCV utils #####
 import numpy as np 
 import cv2 
 
@@ -38,7 +38,7 @@ def denoise(img: array, kernel: Tuple[int, int], area_thresh: int) -> array:
     return thresh
 
 
-def pad_with_frame(img: List[array], desired_shape: Tuple[int, int]) -> List[array]:
+def pad_with_frame(imgs: List[array], desired_shape: Tuple[int, int]) -> List[array]:
     
     def _pad_with_frame(img: array) -> array:
         # construct a frame of desired resolution
