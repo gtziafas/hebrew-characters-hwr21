@@ -35,7 +35,7 @@ class BaselineCNN(nn.Module):
         return self.cls(x)
 
     @no_grad()
-    def predict_scores(self, imgs: List[array], device: str='cpu') -> array:
+    def predict_scores(self, imgs: List[array], device: str='cpu') -> Tensor:
         self.eval()
         filtered = filter_large(self.inp_shape)(imgs)
         padded = pad_with_frame(filtered, self.inp_shape)
