@@ -81,7 +81,7 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('-r', '--data_root', help='path to the directory of training data', type=str, default=ROOT_FOLDER)
-    parser.add_argument('-tst', '--data_root', help='path to the directory of testing data (default no test)', type=str, default=None)
+    parser.add_argument('-tst', '--test_root', help='path to the directory of testing data (default no test)', type=str, default=None)
     parser.add_argument('-d', '--device', help='cpu or cuda', type=str, default='cuda')
     parser.add_argument('-bs', '--batch_size', help='batch size to use for training', type=int, default=64)
     parser.add_argument('-e', '--num_epochs', help='how many epochs of training', type=int, default=15)
