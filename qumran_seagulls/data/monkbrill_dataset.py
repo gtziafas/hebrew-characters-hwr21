@@ -28,4 +28,4 @@ class MonkbrillDataset(ABC):
 
     def show(self, n: int):
         char = self.__getitem__(n)
-        show(char.image, legend=char.name)
+        show(char.image, legend=char.label_str)

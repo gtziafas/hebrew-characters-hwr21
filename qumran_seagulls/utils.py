@@ -58,10 +58,10 @@ def filter_large(desired_shape: Tuple[int, int]) -> Callable[[List[array]], List
 
     def _filter_large(imgs: List[array]) -> List[array]: 
         # identify images larger than desired resolution
-        large_idces, large_imgs = zip(*[(idx, i) for idx, i in enumerate(imgs) if i.shape[0] > H or i.shape[1] > W])
+        large_idces = [idx for idx, i in enumerate(imgs) if i.shape[0] > H or i.shape[1] > W]
 
         # crop tight boxes for that imges
-        cropped_imgs = crop_boxes_dynamic(large_imgs)
+        cropped_imgs = crop_boxes_dynamic([imgs[idx] for idx in large_idces])
 
         # return all thresholded and inverted and large properly replaced
         return [cv2.threshold(img, 0, 0xff, cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)[1] if i not in large_idces else cropped_imgs[large_idces.index(i)] for i, img in enumerate(imgs)]

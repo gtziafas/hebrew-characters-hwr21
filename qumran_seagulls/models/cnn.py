@@ -46,7 +46,7 @@ class BaselineCNN(nn.Module):
 
     @no_grad()
     def predict(self, imgs: List[array], device: str='cpu') -> List[str]:
-        predictions = self.predict_scores(imgs, device).argmax(-1)
+        predictions = self.predict_scores(imgs, device).argmax(-1).cpu()
         return [LABEL_MAP[label] for label in predictions]
 
 

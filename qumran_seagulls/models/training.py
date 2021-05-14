@@ -86,7 +86,7 @@ class Trainer(ABC):
                 patience -= 1
                 if not patience:
                     self.trained_epochs += epoch + 1
-                    break
+                    return best
         self.trained_epochs += num_epochs
         return best
 

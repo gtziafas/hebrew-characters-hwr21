@@ -24,7 +24,7 @@ COLORS_MAP = {
 def main(data_root: str, model_paths: str):
     model_paths = model_paths.split(',')
 
-    ds = MonkbrillDataset(data_root, with_preproc=filter_large((75, 75)))
+    ds = MonkbrillDataset(data_root)
     samples = [[s for s in ds if s.label == l][0] for l in range(27)]
     images = [s.image for s in samples]
  

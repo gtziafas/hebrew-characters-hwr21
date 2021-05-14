@@ -42,7 +42,7 @@ def main(data_root: str,
         test_dl = DataLoader(test_ds, shuffle=False, batch_size=batch_size, \
                             collate_fn=collate(device, FIXED_SHAPE)) if test_ds is not None else None
 
-        model = default_cnn().to(device) if load_path is None else load_pretrained(load_path)
+        model = default_cnn().to(device) if load_path is None else load_pretrained(load_path).to(device)
         optim = AdamW(model.parameters(), lr=lr, weight_decay=wd)
         criterion = CrossEntropyLoss(reduction='mean')
         #criterion = FuzzyLoss(num_classes=27, mass_redistribution=0.1)#, softmax=TaylorSoftmax(order=4))
