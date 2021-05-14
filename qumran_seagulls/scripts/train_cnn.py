@@ -1,7 +1,7 @@
 from ..types import *
 from ..utils import filter_large
 from ..data.monkbrill_dataset import MonkbrillDataset
-from ..models.cnn import default_cnn, collate
+from ..models.cnn import default_cnn, load_pretrained, collate
 #from ..models.loss import FuzzyLoss, TaylorSoftmax
 from ..models.training import Trainer, Metrics
 
@@ -28,6 +28,7 @@ def main(data_root: str,
          early_stopping: Maybe[int],
          test_root: Maybe[str],
          save_path: Maybe[str],
+         load_path: Maybe[str],
          print_log: bool):
 
     # an independent function to init a model and train over some epochs for a given train-dev(-test) split
@@ -41,10 +42,10 @@ def main(data_root: str,
         test_dl = DataLoader(test_ds, shuffle=False, batch_size=batch_size, \
                             collate_fn=collate(device, FIXED_SHAPE)) if test_ds is not None else None
 
-        model = default_cnn().to(device)
+        model = default_cnn().to(device) if load_path is None else load_pretrained(load_path)
         optim = AdamW(model.parameters(), lr=lr, weight_decay=wd)
         criterion = CrossEntropyLoss(reduction='mean')
-        #criterion = FuzzyLoss(num_classes=27, mass_redistribution=0.1)#, softmax=TaylorSoftmax(order=4, device=device))
+        #criterion = FuzzyLoss(num_classes=27, mass_redistribution=0.1)#, softmax=TaylorSoftmax(order=4))
         trainer = Trainer(model, (train_dl, dev_dl), optim, criterion, target_metric="accuracy", \
             print_log=print_log, early_stopping=early_stopping)
 
@@ -91,6 +92,7 @@ if __name__ == "__main__":
     parser.add_argument('-early', '--early_stopping', help='early stop patience (default no early stopping)', type=int, default=None)
     parser.add_argument('-kfold', '--kfold', help='k-fold cross validation', type=int, default=0)
     parser.add_argument('--print_log', action='store_true', help='print training logs', default=False)
+    parser.add_argument('-l', '--load_path', help='full path to load pretrained model (default no load)', type=str, default=None)
 
     kwargs = vars(parser.parse_args())
     main(**kwargs)

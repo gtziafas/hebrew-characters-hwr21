@@ -39,10 +39,10 @@ def denoise(img: array, kernel: Tuple[int, int], area_thresh: int) -> array:
 
 
 def pad_with_frame(imgs: List[array], desired_shape: Tuple[int, int]) -> List[array]:
+    H, W = desired_shape
     
     def _pad_with_frame(img: array) -> array:
         # construct a frame of desired resolution
-        H, W = desired_shape
         frame = np.zeros((H, W))
 
         # paste image in the center of the frame

@@ -71,7 +71,7 @@ def collate(device: str, with_padding: Maybe[Tuple[int, int]]=None) -> Callable[
 
 
 def default_cnn() -> BaselineCNN:
-    return BaselineCNN(num_classes=27, dropout_rates=[0.1, 0.25], inp_shape=(75, 75))
+    return BaselineCNN(num_classes=27, dropout_rates=[0.1, 0.15], inp_shape=(75, 75))
 
 
 def load_pretrained(path: str) -> BaselineCNN:

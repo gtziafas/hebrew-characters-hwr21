@@ -40,17 +40,23 @@ LABEL_MAP = {None: 'nan', **{k: v for k, v in enumerate([
  'Yod',
  'Zayin'])}}
 
+STYLE_MAP = {None: 'nan', 0: 'Archaic', 1: 'Hasmonean', 2: 'Herodian'}
+
 
 @dataclass
 class Character:
-    image: array # H x W binary matrix
-    label: int   # 0, 1, ..., 26
-    name: str    # Alef, Ayin, ..., Zayin
+    image: array    # H x W binary matrix
+    label: int      # 0, 1, ..., 26
+    label_str: str  # Alef, Ayin, ..., Zayin
+    style: int      # 0, 1, 2
+    style_str: str  # Archaic, Hasmonean, Herodian
 
-    def __init__(self, image: array, label: Maybe[int] = None):
+    def __init__(self, image: array, label: Maybe[int]=None, style: Maybe[int]=None):
         self.image = image 
         self.label = label
-        self.name = LABEL_MAP[self.label]
+        self.label_str = LABEL_MAP[self.label]
+        self.style = style 
+        self.style_str = STYLE_MAP[self.style]
 
 
 @dataclass 

@@ -29,7 +29,7 @@ def main(data_root: str, model_paths: str):
     images = [s.image for s in samples]
  
     keys = [p.split('/')[1].split('_')[0] for p in model_paths]
-    methods = [TaylorSoftmax(int(k[-1])) if k.startswith('fuzzy-taylor') else nn.Softmax(-1) for k in keys]
+    methods = [TaylorSoftmax(int(k[-1])) if 'taylor' in k else nn.Softmax(-1) for k in keys]
     all_scores = []
     print('Computing scores for different models...\n')
     for path, method in zip(model_paths, methods):
@@ -37,10 +37,10 @@ def main(data_root: str, model_paths: str):
         all_scores.append(method(model.predict_scores(images)))
         del model
 
-    print('Truth\t' + '\t'.join([p.split('/')[1].split('_')[0] for p in model_paths]))
+    print('Truth\t' + '\t'.join(keys))
 
     for sid, s in enumerate(samples):
-        print(f'{s.name}\t' + '\t'.join([LABEL_MAP[sc[sid].argmax(-1).item()] for sc in all_scores]))
+        print(f'{s.label_str}\t' + '\t'.join([LABEL_MAP[sc[sid].argmax(-1).item()] for sc in all_scores]))
         fig, (ax1, ax2) = plt.subplots(2)
         ax1.imshow(s.image)
         for idx, sc in enumerate(all_scores):
