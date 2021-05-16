@@ -2,36 +2,37 @@ from ..types import *
 from ..utils import pad_with_frame, filter_large
 
 import torch.nn as nn 
-import torch.nn.functional as F
 from torch import tensor, stack, no_grad, load
 
 
 class BaselineCNN(nn.Module):
-    def __init__(self, 
-                 num_classes: int, 
-                 dropout_rates: List[float], 
-                 inp_shape: Tuple[int, int]):
+    def __init__(self, num_classes: int, dropout_rates: List[float], inp_shape: Tuple[int, int]):
         super().__init__()
         self.inp_shape = inp_shape
-        self.dropout_rates = dropout_rates
-        self.block1 = self.block(in_channels=1, out_channels=16, conv_kernel=3, pool_kernel=3) 
-        self.block2 = self.block(in_channels=16, out_channels=32, conv_kernel=3, pool_kernel=3)
-        self.block3 = self.block(in_channels=32, out_channels=64, conv_kernel=3, pool_kernel=2)
+        self.block1 = self.block(in_channels=1, out_channels=16, conv_kernel=3, pool_kernel=3, dropout=0.) 
+        self.block2 = self.block(in_channels=16, out_channels=32, conv_kernel=3, pool_kernel=3, dropout=dropout_rates[0])
+        self.block3 = self.block(in_channels=32, out_channels=64, conv_kernel=3, pool_kernel=2, dropout=dropout_rates[1])
         self.cls = nn.Linear(in_features=256, out_features=num_classes)
 
-    def block(self, in_channels: int, out_channels: int, conv_kernel: int, pool_kernel: int, conv_stride: int=1):
+    def block(self, 
+              in_channels: int, 
+              out_channels: int, 
+              conv_kernel: int, 
+              pool_kernel: int, 
+              dropout: float, 
+              conv_stride: int=1
+             ):
         return nn.Sequential(nn.Conv2d(in_channels, out_channels, kernel_size=conv_kernel, stride=conv_stride),
                              nn.GELU(),
-                             nn.MaxPool2d(kernel_size=pool_kernel)
+                             nn.MaxPool2d(kernel_size=pool_kernel),
+                             nn.Dropout(p=dropout)
                             )
 
     def forward(self, x: Tensor) -> Tensor:
         # x: B x 1 x H x W
         x = self.block1(x)
         x = self.block2(x)
-        x = F.dropout(x, p = self.dropout_rates[0])
         x = self.block3(x)
-        x = F.dropout(x, p = self.dropout_rates[1])
         x = x.flatten(1)
         return self.cls(x)
 
@@ -72,7 +73,7 @@ def collate(device: str, with_padding: Maybe[Tuple[int, int]]=None) -> Callable[
 
 
 def default_cnn() -> BaselineCNN:
-    return BaselineCNN(num_classes=27, dropout_rates=[0.1, 0.15], inp_shape=(75, 75))
+    return BaselineCNN(num_classes=27, dropout_rates=[0.1, 0.2], inp_shape=(75, 75))
 
 
 def load_pretrained(path: str) -> BaselineCNN:
