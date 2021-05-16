@@ -53,23 +53,21 @@ class Trainer(ABC):
             optimizer: Optimizer, 
             criterion: nn.Module, 
             target_metric: str,
-            print_log: bool = False,
             early_stopping: Maybe[int] = None):
         self.model = model
         self.optimizer = optimizer
         self.criterion = criterion
-        self.train_dl, self.dev_dl = dls
+        self.train_dl, self.dev_dl, self.test_dl = dls
         self.logs = {'train': [], 'dev': [], 'test': []}
         self.target_metric = target_metric
         self.trained_epochs = 0
-        self.print_log = print_log
         self.early_stop_patience = early_stopping
 
-    def iterate(self, num_epochs: int, with_test: Maybe[DataLoader] = None, with_save: Maybe[str] = None) -> Metrics:
+    def iterate(self, num_epochs: int, print_log: bool = False, with_save: Maybe[str] = None) -> Metrics:
         best = {self.target_metric: 0.}
         patience = self.early_stop_patience if self.early_stop_patience is not None else num_epochs
         for epoch in range(num_epochs):
-            self.step()
+            self.step(print_log)
 
             # update logger for best - save - test - early stopping
             if self.logs['dev'][-1][self.target_metric] > best[self.target_metric]:
@@ -79,18 +77,19 @@ class Trainer(ABC):
                 if with_save is not None:
                     torch.save(self.model.state_dict(), with_save)
 
-                if with_test is not None:
-                    self.logs['test'].append({'epoch': epoch+1, **eval_epoch(self.model, with_test, self.criterion)})
+                if self.test_dl is not None:
+                    self.logs['test'].append({'epoch': epoch+1, **eval_epoch(self.model, self.test_dl, self.criterion)})
 
             else:
                 patience -= 1
                 if not patience:
                     self.trained_epochs += epoch + 1
                     return best
+
         self.trained_epochs += num_epochs
         return best
 
-    def step(self):
+    def step(self, print_log: bool = False):
         current_epoch = len(self.logs['train']) + 1
 
         # train - eval this epoch
@@ -98,7 +97,7 @@ class Trainer(ABC):
         self.logs['dev'].append({'epoch': current_epoch, **eval_epoch(self.model, self.dev_dl, self.criterion)})
         
         # print if wanted
-        if self.print_log:
+        if print_log:
             print('TRAIN:')
             for k,v in self.logs['train'][-1].items():
                 print(f'{k} : {v}')

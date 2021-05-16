@@ -26,6 +26,7 @@ class BaselineCNN(nn.Module):
                             )
 
     def forward(self, x: Tensor) -> Tensor:
+        # x: B x 1 x H x W
         x = self.block1(x)
         x = self.block2(x)
         x = F.dropout(x, p = self.dropout_rates[0])

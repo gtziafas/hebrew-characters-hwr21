@@ -1,5 +1,5 @@
 from ..types import *
-from ..utils import show
+from ..utils import show, filter_large
 
 from torchvision.datasets import ImageFolder
 
@@ -29,3 +29,7 @@ class MonkbrillDataset(ABC):
     def show(self, n: int):
         char = self.__getitem__(n)
         show(char.image, legend=char.label_str)
+
+
+def get_monkbrill():
+    return MonkbrillDataset('./data/monkbrill', with_preproc=filter_large((75, 75)))

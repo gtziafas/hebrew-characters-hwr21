@@ -4,6 +4,13 @@ from .types import *
 import numpy as np 
 import cv2 
 
+MORPHOLOGY_MAP = {
+    'erode': cv2.MORPH_ERODE,
+    'dilate': cv2.MORPH_DILATE,
+    'open': cv2.MORPH_OPEN,
+    'close': cv2.MORPH_CLOSE
+}
+
 
 def show(img: array, legend: Maybe[str] = None):
     legend = 'unlabeled' if legend is None else legend
@@ -15,29 +22,44 @@ def show(img: array, legend: Maybe[str] = None):
     cv2.destroyWindow(legend)
 
 
+def destroy():
+    cv2.destroyAllWindows()
+
+
 def crop_box(img: array, box: Box):
     return img[box.y : box.y + box.h, box.x : box.x + box.w]
 
 
-def denoise(img: array, kernel: Tuple[int, int], area_thresh: int) -> array:
-    # threshold and inverse
+# binarize and invert
+def thresh_invert(img: array) -> array:
     _, thresh = cv2.threshold(img, 0, 0xff, cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
+    return thresh 
 
-    # morphology
-    kernel = np.ones(kernel, np.uint8)
-    #thresh =  cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel, iterations=1)
-    thresh = cv2.erode(thresh, kernel, iterations=1)
 
+# apply morphological kernel
+def morphology(img: array, kernel: Tuple[int, int], morph: str = 'close', iterations: int=1) -> array:
+    return cv2.morphologyEx(img, MORPHOLOGY_MAP[morph], kernel=np.ones(kernel, np.uint8), iterations=iterations)
+
+
+# remove blobs of small area
+def remove_blobs(img: array, area_thresh: int) -> array:
     # remove small blobs
-    contours, _  = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    contours, _  = cv2.findContours(img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     contours = [c for c in contours if cv2.contourArea(c) < area_thresh]
-    mask = np.zeros_like(thresh)
+    mask = np.zeros_like(img)
     for c in contours:
         mask = cv2.drawContours(mask, [c], 0, 0xff, -1)
-    thresh[mask==0xff] = 0
-    return thresh
+    img[mask==0xff] = 0
+    return img
+
+# thresh + invert + morphology + blobs
+def denoise(img: array, kernel: Tuple[int, int], area_thresh: int) -> array:
+    img = thresh_invert(img)
+    img = morphology(img, kernel)
+    return remove_blobs(img, area_thresh)
 
 
+# pad image with zeros in the center of a desired resolution frame
 def pad_with_frame(imgs: List[array], desired_shape: Tuple[int, int]) -> List[array]:
     H, W = desired_shape
     
