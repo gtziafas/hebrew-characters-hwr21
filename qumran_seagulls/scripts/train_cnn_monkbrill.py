@@ -3,19 +3,24 @@ from ..utils import filter_large
 from ..data.monkbrill_dataset import MonkbrillDataset
 from ..models.cnn import default_cnn, load_pretrained, collate
 from ..models.loss import FuzzyLoss, TaylorSoftmax
-from ..models.training import Trainer, Metrics
+from ..models.training import Trainer, Metrics, eval_epoch, train_epoch
 
-from torch import manual_seed
+import torch
 from torch.optim import AdamW
 from torch.nn import CrossEntropyLoss
 from torch.utils.data import random_split
 from sklearn.model_selection import KFold
 
-manual_seed(14)
-
 ROOT_FOLDER = './data/monkbrill'
 
 FIXED_SHAPE = (75, 75)
+
+# reproducability
+SEED = torch.manual_seed(14)
+if torch.cuda.is_available():
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    torch.cuda.manual_seed_all(14)
 
 
 def main(data_root: str,
@@ -33,9 +38,9 @@ def main(data_root: str,
 
     # an independent function to init a model and train over some epochs for a given train-dev(-test) split
     def train(train_ds: List[Character], dev_ds: List[Character], test_ds: Maybe[List[Character]]=None) -> Metrics:
-        train_dl = DataLoader(train_ds, shuffle=True, batch_size=batch_size, \
+        train_dl = DataLoader(train_ds, shuffle=True, batch_size=batch_size, worker_init_fn=SEED, \
                             collate_fn=collate(device, FIXED_SHAPE))
-        dev_dl = DataLoader(train_ds, shuffle=False, batch_size=batch_size, \
+        dev_dl = DataLoader(dev_ds, shuffle=False, batch_size=batch_size, worker_init_fn=SEED, \
                             collate_fn=collate(device, FIXED_SHAPE))
 
         # optionally test in separate split, given from a path directory as argument
@@ -47,7 +52,7 @@ def main(data_root: str,
         criterion = CrossEntropyLoss(reduction='mean')
         #criterion = FuzzyLoss(num_classes=27, mass_redistribution=0.3)#, softmax=TaylorSoftmax(order=4))
         trainer = Trainer(model, (train_dl, dev_dl, test_dl), optim, criterion, target_metric="accuracy", early_stopping=early_stopping)
-
+        
         return trainer.iterate(num_epochs, with_save=save_path, print_log=print_log)
 
 
@@ -58,7 +63,7 @@ def main(data_root: str,
     if not kfold:
         # train once in a 80%-20% train-dev split
         dev_size = int(.2 * len(ds))
-        train_ds, dev_ds = random_split(ds, [len(ds) - dev_size, dev_size])
+        train_ds, dev_ds = random_split(ds, [len(ds) - dev_size, dev_size], generator=SEED)
         print('Training on random train-dev split...')
         best = train(train_ds, dev_ds, test_ds)
         print(f'Results random split: {best}')
@@ -75,6 +80,7 @@ def main(data_root: str,
             print(f'Results {kfold}-fold, iteration {iteration+1}: {best}')
             accu += best['accuracy']
         print(f'Average accuracy {kfold}-fold: {accu/kfold}')
+
 
 
 if __name__ == "__main__":
