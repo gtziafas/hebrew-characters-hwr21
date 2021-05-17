@@ -34,7 +34,8 @@ def main(data_root: str,
          test_root: Maybe[str],
          save_path: Maybe[str],
          load_path: Maybe[str],
-         print_log: bool):
+         print_log: bool
+        ):
 
     # an independent function to init a model and train over some epochs for a given train-dev(-test) split
     def train(train_ds: List[Character], dev_ds: List[Character], test_ds: Maybe[List[Character]]=None) -> Metrics:
@@ -49,8 +50,8 @@ def main(data_root: str,
 
         model = default_cnn().to(device) if load_path is None else load_pretrained(load_path).to(device)
         optim = AdamW(model.parameters(), lr=lr, weight_decay=wd)
-        criterion = CrossEntropyLoss(reduction='mean')
-        #criterion = FuzzyLoss(num_classes=27, mass_redistribution=0.3)#, softmax=TaylorSoftmax(order=4))
+        #criterion = CrossEntropyLoss(reduction='mean')
+        criterion = FuzzyLoss(num_classes=27, mass_redistribution=0.3)#, softmax=TaylorSoftmax(order=4))
         trainer = Trainer(model, (train_dl, dev_dl, test_dl), optim, criterion, target_metric="accuracy", early_stopping=early_stopping)
         
         return trainer.iterate(num_epochs, with_save=save_path, print_log=print_log)
@@ -98,7 +99,7 @@ if __name__ == "__main__":
     parser.add_argument('-kfold', '--kfold', help='k-fold cross validation', type=int, default=0)
     parser.add_argument('--print_log', action='store_true', help='print training logs', default=False)
     parser.add_argument('-l', '--load_path', help='full path to load pretrained model (default no load)', type=str, default=None)
-
+    
     kwargs = vars(parser.parse_args())
     main(**kwargs)
 
