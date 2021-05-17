@@ -1,0 +1,53 @@
+%%%%%%%%%%% First place %%%%%%%%%%%
+
+python3 -m qumran_seagulls.scripts.train_cnn_monkbrill -e 15 -early 2 -bs 128 -lr 0.005 -wd 0.1 -kfold 10 -dol 0.1 -doh 0.25
+/home/andrei/PycharmProjects/hebrew-characters-hwr21
+Loading / Preprocessing dataset...
+10-fold cross validation...
+Results 10-fold, iteration 1: {'epoch': 7, 'loss': 0.27844, 'accuracy': 0.9386}
+Results 10-fold, iteration 2: {'epoch': 8, 'loss': 0.23151, 'accuracy': 0.9404}
+Results 10-fold, iteration 3: {'epoch': 10, 'loss': 0.39087, 'accuracy': 0.9458}
+Results 10-fold, iteration 4: {'epoch': 8, 'loss': 0.23358, 'accuracy': 0.944}
+Results 10-fold, iteration 5: {'epoch': 5, 'loss': 0.20749, 'accuracy': 0.9495}
+Results 10-fold, iteration 6: {'epoch': 6, 'loss': 0.17966, 'accuracy': 0.9621}
+Results 10-fold, iteration 7: {'epoch': 7, 'loss': 0.27742, 'accuracy': 0.935}
+Results 10-fold, iteration 8: {'epoch': 8, 'loss': 0.26689, 'accuracy': 0.9421}
+Results 10-fold, iteration 9: {'epoch': 13, 'loss': 0.22908, 'accuracy': 0.9512}
+Results 10-fold, iteration 10: {'epoch': 5, 'loss': 0.16453, 'accuracy': 0.9512}
+Average accuracy 10-fold: 0.9459899999999999
+
+%%%%%%%%%%% Second place %%%%%%%%%%%
+
+python3 -m qumran_seagulls.scripts.train_cnn_monkbrill -e 15 -early 2 -bs 64 -lr 0.005 -wd 0.1 -kfold 10 -dol 0.1 -doh 0.33
+/home/andrei/PycharmProjects/hebrew-characters-hwr21
+Loading / Preprocessing dataset...
+10-fold cross validation...
+Results 10-fold, iteration 1: {'epoch': 10, 'loss': 0.27264, 'accuracy': 0.9422}
+Results 10-fold, iteration 2: {'epoch': 5, 'loss': 0.24744, 'accuracy': 0.9386}
+Results 10-fold, iteration 3: {'epoch': 4, 'loss': 0.33442, 'accuracy': 0.9242}
+Results 10-fold, iteration 4: {'epoch': 9, 'loss': 0.22072, 'accuracy': 0.9513}
+Results 10-fold, iteration 5: {'epoch': 6, 'loss': 0.18043, 'accuracy': 0.9549}
+Results 10-fold, iteration 6: {'epoch': 6, 'loss': 0.19022, 'accuracy': 0.9513}
+Results 10-fold, iteration 7: {'epoch': 9, 'loss': 0.23546, 'accuracy': 0.9513}
+Results 10-fold, iteration 8: {'epoch': 6, 'loss': 0.30402, 'accuracy': 0.9385}
+Results 10-fold, iteration 9: {'epoch': 4, 'loss': 0.25223, 'accuracy': 0.9458}
+Results 10-fold, iteration 10: {'epoch': 4, 'loss': 0.16372, 'accuracy': 0.9548}
+Average accuracy 10-fold: 0.9452900000000002
+
+%%%%%%%%%%% Third place %%%%%%%%%%%
+
+python3 -m qumran_seagulls.scripts.train_cnn_monkbrill -e 15 -early 2 -bs 64 -lr 0.005 -wd 0.005 -kfold 10 -dol 0.1 -doh 0.33
+/home/andrei/PycharmProjects/hebrew-characters-hwr21
+Loading / Preprocessing dataset...
+10-fold cross validation...
+Results 10-fold, iteration 1: {'epoch': 6, 'loss': 0.32556, 'accuracy': 0.9368}
+Results 10-fold, iteration 2: {'epoch': 10, 'loss': 0.21566, 'accuracy': 0.9422}
+Results 10-fold, iteration 3: {'epoch': 3, 'loss': 0.32221, 'accuracy': 0.9224}
+Results 10-fold, iteration 4: {'epoch': 6, 'loss': 0.19427, 'accuracy': 0.9458}
+Results 10-fold, iteration 5: {'epoch': 9, 'loss': 0.16459, 'accuracy': 0.9603}
+Results 10-fold, iteration 6: {'epoch': 10, 'loss': 0.18175, 'accuracy': 0.9603}
+Results 10-fold, iteration 7: {'epoch': 5, 'loss': 0.26031, 'accuracy': 0.9422}
+Results 10-fold, iteration 8: {'epoch': 8, 'loss': 0.33781, 'accuracy': 0.9403}
+Results 10-fold, iteration 9: {'epoch': 5, 'loss': 0.21687, 'accuracy': 0.9512}
+Results 10-fold, iteration 10: {'epoch': 7, 'loss': 0.1927, 'accuracy': 0.9512}
+Average accuracy 10-fold: 0.94527

@@ -68,8 +68,10 @@ def collate(device: str, with_padding: Maybe[Tuple[int, int]]=None) -> Callable[
     return _collate
 
 
-def default_cnn() -> BaselineCNN:
-    return BaselineCNN(num_classes=27, dropout_rates=[0.1, 0.5], inp_shape=(75, 75))
+def default_cnn(dropout: Maybe[List[float]] = None) -> BaselineCNN:
+    if dropout is None or dropout[0] is None or dropout[1] is None:
+        dropout = [0.1, 0.5]
+    return BaselineCNN(num_classes=27, dropout_rates=dropout, inp_shape=(75, 75))
 
 
 def load_pretrained(path: str) -> BaselineCNN:
