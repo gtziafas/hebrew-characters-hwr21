@@ -3,7 +3,7 @@ from ..utils import filter_large
 from ..data.monkbrill_dataset import MonkbrillDataset
 from ..models.cnn import default_cnn, load_pretrained, collate
 from ..models.loss import FuzzyLoss, TaylorSoftmax
-from ..models.training import Trainer, Metrics, eval_epoch, train_epoch
+from ..models.training import Trainer, Metrics
 
 import torch
 from torch.optim import AdamW
@@ -50,8 +50,8 @@ def main(data_root: str,
 
         model = default_cnn().to(device) if load_path is None else load_pretrained(load_path).to(device)
         optim = AdamW(model.parameters(), lr=lr, weight_decay=wd)
-        #criterion = CrossEntropyLoss(reduction='mean')
-        criterion = FuzzyLoss(num_classes=27, mass_redistribution=0.3)#, softmax=TaylorSoftmax(order=4))
+        criterion = CrossEntropyLoss(reduction='mean')
+        #criterion = FuzzyLoss(num_classes=27, mass_redistribution=0.3)#, softmax=TaylorSoftmax(order=4))
         trainer = Trainer(model, (train_dl, dev_dl, test_dl), optim, criterion, target_metric="accuracy", early_stopping=early_stopping)
         
         return trainer.iterate(num_epochs, with_save=save_path, print_log=print_log)
