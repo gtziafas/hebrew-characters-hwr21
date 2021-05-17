@@ -118,4 +118,4 @@ if __name__ == "__main__":
 # batch size:
 #       32, *64*, 128
 #
-# e.g: python3 -m qumran_seagulls.scripts.train_cnn -e 15 -early 2 -bs 64 -lr 0.001 -wd 0.01 -kfold 10
+# e.g: python3 -m qumran_seagulls.scripts.train_cnn_monkbrill -e 15 -early 2 -bs 64 -lr 0.001 -wd 0.01 -kfold 10
