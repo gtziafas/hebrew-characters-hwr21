@@ -6,13 +6,13 @@ from torch import tensor, stack, no_grad, load
 
 
 class BaselineCNN(nn.Module):
-    def __init__(self, num_classes: int, dropout_rates: List[float], inp_shape: Tuple[int, int]):
+    def __init__(self, num_classes: int, dropout_rates: List[float], inp_shape: Tuple[int, int], num_features: int):
         super().__init__()
         self.inp_shape = inp_shape
         self.block1 = self.block(in_channels=1, out_channels=16, conv_kernel=3, pool_kernel=3, dropout=0.) 
         self.block2 = self.block(in_channels=16, out_channels=32, conv_kernel=3, pool_kernel=2, dropout=dropout_rates[0])
         self.block3 = self.block(in_channels=32, out_channels=64, conv_kernel=3, pool_kernel=2, dropout=dropout_rates[1])
-        self.cls = nn.Linear(in_features=1024, out_features=num_classes)
+        self.cls = nn.Linear(in_features=num_features, out_features=num_classes)
 
     def block(self, 
               in_channels: int, 
@@ -50,6 +50,10 @@ class BaselineCNN(nn.Module):
         predictions = self.predict_scores(imgs, device).argmax(-1).cpu()
         return [LABEL_MAP[label] for label in predictions]
 
+    def load_pretrained(path: str):
+        checkpoint = load(path)
+        self.load_state_dict(checkpoint)
+
 
 def collate(device: str, with_padding: Maybe[Tuple[int, int]]=None) -> Callable[[List[Character]], Tuple[Tensor, Tensor]]:
     
@@ -68,14 +72,11 @@ def collate(device: str, with_padding: Maybe[Tuple[int, int]]=None) -> Callable[
     return _collate
 
 
-def default_cnn(dropout: Maybe[List[float]] = None) -> BaselineCNN:
+def default_cnn_monkbrill(dropout: Maybe[List[float]] = None) -> BaselineCNN:
     if dropout is None or dropout[0] is None or dropout[1] is None:
         dropout = [0.1, 0.5]
-    return BaselineCNN(num_classes=27, dropout_rates=dropout, inp_shape=(75, 75))
+    return BaselineCNN(num_classes=27, dropout_rates=dropout, inp_shape=(75, 75), num_features=1024)
 
 
-def load_pretrained(path: str) -> BaselineCNN:
-    model = default_cnn()
-    checkpoint = load(path)
-    model.load_state_dict(checkpoint)
-    return model
+def default_cnn_styles() -> BaselineCNN:
+    return BaselineCNN(num_classes=3, dropout_rates=[0.1, 0.5], inp_shape=(75, 75), num_features=1024)

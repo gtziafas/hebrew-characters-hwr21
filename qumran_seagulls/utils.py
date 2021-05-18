@@ -22,6 +22,18 @@ def show(img: array, legend: Maybe[str] = None):
     cv2.destroyWindow(legend)
 
 
+def show_many(imgs: List[array], legends: Maybe[List[str]] = None):
+    assert len(imgs) == len(legends)
+    legends = [l if l is not None else 'image' + str(i) for i, l in enumerate(legends)]
+    print([f'{l}: {i.shape}'for l, i in zip(legends, imgs)])
+    for i, l in zip(imgs, legends):
+        cv2.imshow(l, i)
+    while 1:
+        key = cv2.waitKey(1) & 0xff
+        if key == ord('q'):
+            break
+
+
 def destroy():
     cv2.destroyAllWindows()
 
@@ -34,6 +46,10 @@ def crop_box(img: array, box: Box):
 def thresh_invert(img: array) -> array:
     _, thresh = cv2.threshold(img, 0, 0xff, cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
     return thresh 
+
+
+def thresh_invert_many(imgs: List[array]) -> array:
+    return list(map(thresh_invert, imgs))
 
 
 # apply morphological kernel
@@ -116,31 +132,27 @@ def crop_boxes_fixed(desired_shape: Tuple[int, int]) -> Callable[[List[array]], 
         imgs = [cv2.threshold(i, 0, 0xff, cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)[1] for i in imgs]
         
         # identify images larger than desired resolution
-        large_idces, large_imgs = zip(*[(idx, i) for idx, i in enumerate(imgs) if i.shape[0] > H or i.shape[1] > W])
+        large_idces = [idx for idx, i in enumerate(imgs) if i.shape[0] > H or i.shape[1] > W]
 
         # find contours for each large image
-        contours = [cv2.findContours(i, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0] for i in large_imgs]
+        contours = [cv2.findContours(imgs[i], cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0] for i in large_idces]
         
         # sort by area and keep largest
-        contours_max = [sorted(conts, key=lambda c: cv2.contourArea(c), reverse=True)[0] for conts in contours]
+        contours = [sorted(conts, key=lambda c: cv2.contourArea(c), reverse=True)[0] for conts in contours]
         
         # compute largests contour center of gravity
-        moments = [cv2.moments(c) for c in contours_max]
+        moments = [cv2.moments(c) for c in contours]
         centers = [(int(M['m10']/M['m00']), int(M['m01']/M['m00'])) for M in moments]
-        
+
         # fix images in desired resolution
-        frames = []
-        for idx, img in enumerate(imgs):
-            height, width = img.shape
+        for idx, center in zip(large_idces, centers):
+            image = imgs[idx]
+            height, width = image.shape 
+            cx = max(0, center[0] - min(W, width) // 2)
+            cy = max(0, center[1] - min(H, height) // 2)
+            box = Box(cx, cy, min(W, width), min(H, height))
+            imgs[idx] = crop_box(image, box)
 
-            # crop around center of gravity of largest contour
-            if idx in large_idces:
-                cx, cy = centers[large_idces.index(idx)][0], centers[large_idces.index(idx)][1]
-                box = Box(cx - min(width, W)//2, cy - min(height, H)//2, min(W, width), min(H, height))
-                img = crop_box(img, box)
-
-            frames.append(pad_with_frame([img], desired_shape)[0])
-
-        return frames
+        return pad_with_frame(imgs, (H, W))
 
     return _crop_boxes_fixed

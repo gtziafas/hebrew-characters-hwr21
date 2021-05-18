@@ -1,7 +1,7 @@
 from ..types import *
 from ..utils import crop_boxes_fixed
-from ..data.monkbrill_dataset import MonkbrillDataset
-from ..models.cnn import default_cnn_monkbrill, collate
+from ..data.styles_dataset import StylesDataset
+from ..models.cnn import default_cnn_styles
 from ..models.loss import FuzzyLoss, TaylorSoftmax
 from ..models.training import Trainer, Metrics
 
@@ -11,7 +11,7 @@ from torch.nn import CrossEntropyLoss
 from torch.utils.data import random_split
 from sklearn.model_selection import KFold
 
-ROOT_FOLDER = './data/monkbrill'
+ROOT_FOLDER = './data/styles/characters'
 
 FIXED_SHAPE = (75, 75)
 
@@ -21,6 +21,24 @@ if torch.cuda.is_available():
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
     torch.cuda.manual_seed_all(14)
+
+
+def collate(device: str, with_padding: Maybe[Tuple[int, int]]=None) -> Callable[[List[Character]], Tuple[Tensor, Tensor]]:
+    
+    def _collate(batch: List[Character]) -> Tuple[Tensor, Tensor]:
+        imgs, labels = zip(*[(s.image, s.style) for s in batch])
+    
+        # pad to equal size if desired
+        if with_padding is not None:
+            imgs = pad_with_frame(imgs, desired_shape=with_padding)
+
+        # normalize to [0,1], tensorize, send to device, add channel dimension and stack
+        imgs = torch.stack([torch.tensor(img / 0xff, dtype=floatt, device=device) for img in imgs], dim=0).unsqueeze(1)
+        labels = torch.stack([torch.tensor(label, dtype=longt, device=device) for label in labels], dim=0)
+        return imgs, labels
+
+    return _collate
+
 
 
 def main(data_root: str,
@@ -34,8 +52,6 @@ def main(data_root: str,
          test_root: Maybe[str],
          save_path: Maybe[str],
          load_path: Maybe[str],
-         dropout_low: int,
-         dropout_high: int,
          print_log: bool
         ):
 
@@ -47,7 +63,7 @@ def main(data_root: str,
         # optionally test in separate split, given from a path directory as argument
         test_dl = DataLoader(test_ds, shuffle=False, batch_size=batch_size, collate_fn=collate(device)) if test_ds is not None else None
 
-        model = default_cnn_monkbrill(dropout=[dropout_low, dropout_high]).to(device)
+        model = default_cnn_styles().to(device) 
         if load_path is not None:
             model.load_pretrained(load_path)
         optim = AdamW(model.parameters(), lr=lr, weight_decay=wd)
@@ -59,8 +75,8 @@ def main(data_root: str,
 
 
     print('Loading / Preprocessing dataset...')
-    ds = MonkbrillDataset(data_root, with_preproc=crop_boxes_fixed(FIXED_SHAPE))
-    test_ds = MonkbrillDataset(test_root, with_preproc=crop_boxes_fixed(FIXED_SHAPE)) if test_root is not None else None
+    ds = StylesDataset(data_root, with_preproc=crop_boxes_fixed(FIXED_SHAPE))
+    test_ds = StyleslDataset(test_root, with_preproc=crop_boxes_fixed(FIXED_SHAPE)) if test_root is not None else None
 
     if not kfold:
         # train once in a 80%-20% train-dev split
@@ -99,26 +115,7 @@ if __name__ == "__main__":
     parser.add_argument('-early', '--early_stopping', help='early stop patience (default no early stopping)', type=int, default=None)
     parser.add_argument('-kfold', '--kfold', help='k-fold cross validation', type=int, default=0)
     parser.add_argument('--print_log', action='store_true', help='print training logs', default=False)
-    parser.add_argument('-dol', '--dropout_low', help='dropout low', type=float, default=None)
-    parser.add_argument('-doh', '--dropout_high', help='dropout high', type=float, default=None)
     parser.add_argument('-l', '--load_path', help='full path to load pretrained model (default no load)', type=str, default=None)
     
     kwargs = vars(parser.parse_args())
     main(**kwargs)
-
-
-# we must experiment with the following hyper-params (10-fold):
-#
-# dropout_rates (in cnn.py):
-#       [0.1, 0.1], [0.1, 0.2], *[0.1, 0.25]*, [0.1, 0.33]
-#
-# learning rates:
-#       1e-04, 5e-04, *1e-03*, 5e-03
-#
-# weight decays:
-#       0.001, 0.005, *0.01*, 0.05, 0.1
-#
-# batch size:
-#       32, *64*, 128
-#
-# e.g: python3 -m qumran_seagulls.scripts.train_cnn_monkbrill -e 15 -early 2 -bs 64 -lr 0.001 -wd 0.01 -kfold 10
