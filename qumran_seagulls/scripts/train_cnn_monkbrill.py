@@ -1,7 +1,7 @@
 from ..types import *
-from ..utils import filter_large
+from ..utils import crop_boxes_fixed
 from ..data.monkbrill_dataset import MonkbrillDataset
-from ..models.cnn import default_cnn, load_pretrained, collate
+from ..models.cnn import default_cnn_monkbrill, collate
 from ..models.loss import FuzzyLoss, TaylorSoftmax
 from ..models.training import Trainer, Metrics
 
@@ -39,16 +39,15 @@ def main(data_root: str,
 
     # an independent function to init a model and train over some epochs for a given train-dev(-test) split
     def train(train_ds: List[Character], dev_ds: List[Character], test_ds: Maybe[List[Character]]=None) -> Metrics:
-        train_dl = DataLoader(train_ds, shuffle=True, batch_size=batch_size, worker_init_fn=SEED, \
-                            collate_fn=collate(device, FIXED_SHAPE))
-        dev_dl = DataLoader(dev_ds, shuffle=False, batch_size=batch_size, worker_init_fn=SEED, \
-                            collate_fn=collate(device, FIXED_SHAPE))
+        train_dl = DataLoader(train_ds, shuffle=True, batch_size=batch_size, worker_init_fn=SEED, collate_fn=collate(device))
+        dev_dl = DataLoader(dev_ds, shuffle=False, batch_size=batch_size, worker_init_fn=SEED, collate_fn=collate(device))
 
         # optionally test in separate split, given from a path directory as argument
-        test_dl = DataLoader(test_ds, shuffle=False, batch_size=batch_size, \
-                            collate_fn=collate(device, FIXED_SHAPE)) if test_ds is not None else None
+        test_dl = DataLoader(test_ds, shuffle=False, batch_size=batch_size, collate_fn=collate(device)) if test_ds is not None else None
 
-        model = default_cnn().to(device) if load_path is None else load_pretrained(load_path).to(device)
+        model = default_cnn_monkbrill().to(device)
+        if load_path is not None:
+            model.load_pretrained(load_path)
         optim = AdamW(model.parameters(), lr=lr, weight_decay=wd)
         criterion = CrossEntropyLoss(reduction='mean')
         #criterion = FuzzyLoss(num_classes=27, mass_redistribution=0.3)#, softmax=TaylorSoftmax(order=4))
@@ -58,8 +57,8 @@ def main(data_root: str,
 
 
     print('Loading / Preprocessing dataset...')
-    ds = MonkbrillDataset(data_root, with_preproc=filter_large(FIXED_SHAPE))
-    test_ds = MonkbrillDataset(test_root, with_preproc=filter_large(FIXED_SHAPE)) if test_root is not None else None
+    ds = MonkbrillDataset(data_root, with_preproc=crop_boxes_fixed(FIXED_SHAPE))
+    test_ds = MonkbrillDataset(test_root, with_preproc=crop_boxes_fixed(FIXED_SHAPE)) if test_root is not None else None
 
     if not kfold:
         # train once in a 80%-20% train-dev split
@@ -118,4 +117,4 @@ if __name__ == "__main__":
 # batch size:
 #       32, *64*, 128
 #
-# e.g: python3 -m qumran_seagulls.scripts.train_cnn -e 15 -early 2 -bs 64 -lr 0.001 -wd 0.01 -kfold 10
+# e.g: python3 -m qumran_seagulls.scripts.train_cnn_monkbrill -e 15 -early 2 -bs 64 -lr 0.001 -wd 0.01 -kfold 10
