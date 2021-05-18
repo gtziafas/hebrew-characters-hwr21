@@ -50,7 +50,7 @@ class BaselineCNN(nn.Module):
         predictions = self.predict_scores(imgs, device).argmax(-1).cpu()
         return [LABEL_MAP[label] for label in predictions]
 
-    def load_pretrained(path: str):
+    def load_pretrained(self, path: str):
         checkpoint = load(path)
         self.load_state_dict(checkpoint)
 
