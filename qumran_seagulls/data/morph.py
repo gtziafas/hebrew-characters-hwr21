@@ -30,12 +30,14 @@ Load all image samples from the dump folder.
 def load_images():
     ia.seed(1)
     image_list = []
+    name_list = []
     for filename in glob.glob('dump/*.png'):
         im = Image.open(filename)
         im = np.array(im, dtype=np.uint8)
         image_list.append(im)
+        name_list.append(filename.strip('.png').strip('dump/'))
 
-    return image_list
+    return image_list, name_list
 
 
 '''
@@ -55,27 +57,31 @@ def augment_images(image_list):
     aug_list = []
     aug = None
     aug_name = None
+    hyper = None
 
     if args.augmentation == 'e':
         alpha = input('Alpha = ')
         sigma = input('Sigma = ')
         aug = iaa.ElasticTransformation(alpha=float(alpha), sigma=float(sigma))
         aug_name = 'Elastic'
+        hyper = (alpha, sigma)
     elif args.augmentation == 'a':
         r1 = input('Range start = ')
         r2 = input('Range end = ')
         aug = iaa.Affine(scale=(float(r1), float(r2)))
         aug_name = 'Affine'
+        hyper = (r1, r2)
     elif args.augmentation == 'p':
         r1 = input('Range start = ')
         r2 = input('Range end = ')
         aug = iaa.PerspectiveTransform(scale=(float(r1), float(r2)))
         aug_name = 'Perspective'
+        hyper = (r1, r2)
 
     for image in image_list:
         aug_list.append(aug.augment_images(image))
 
-    return aug_list, aug_name
+    return aug_list, aug_name, hyper
 
 
 '''
@@ -83,9 +89,10 @@ Save all images in: augmented_font_samples
 '''
 
 
-def save_images(image_list, name):
+def save_images(image_list, name, names_list, hyper):
+    h1, h2 = hyper
     for idx, image in enumerate(image_list):
-        imageio.imwrite(f'augmented_font_samples/{name}_{str(idx)}.png', image)
+        imageio.imwrite(f'augmented_font_samples/{str(names_list[idx])}_{name}_[{h1},{h2}].png', image)
 
 
 def show_comparison():
@@ -140,10 +147,9 @@ def plot_comparison(image_list):
 
 def main():
     if args.create_data == 't':
-
-        images_list = load_images()
-        aug_list, aug_name = augment_images(images_list)
-        save_images(aug_list, aug_name)
+        images_list, names_list = load_images()
+        aug_list, aug_name, hyper = augment_images(images_list)
+        save_images(aug_list, aug_name, names_list, hyper)
         print("Augmented images saves successfully!")
     else:
         show_comparison()
