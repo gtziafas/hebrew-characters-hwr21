@@ -4,6 +4,23 @@ from PIL import Image
 import imgaug as ia
 import imageio
 import glob
+import argparse
+import matplotlib.pyplot as plt
+
+parser = argparse.ArgumentParser(description='Process some integers.')
+parser.add_argument('-c', '--create_data', type=str, help='Create Augmented data: t/f', default='f')
+parser.add_argument('-l', '--letter', type=int, help='letter of the habbakuk alphabet', default=1)
+parser.add_argument('-a', '--augmentation', type=str,
+                    help='Augmentation type: Elastic (e), Affine (a), Perspective (p)', default='e')
+
+args = parser.parse_args()
+
+if args.letter > 27:
+    parser.error('-l: Integer should be <= 27')
+if args.augmentation not in {'a', 'e', 'p'}:
+    parser.error('-a: Augmentation should be: a, e or p')
+if args.create_data not in {'t', 'f'}:
+    parser.error('-c: Should be: t or f')
 
 '''
 Load all image samples from the dump folder. 
@@ -35,20 +52,30 @@ distanced from the image’s corner points.
 
 
 def augment_images(image_list):
-    aug_elastic_list = []
-    aug_perspective_list = []
-    aug_affine_list = []
+    aug_list = []
+    aug = None
+    aug_name = None
 
-    aug_elastic = iaa.ElasticTransformation(alpha=(0, 35.0), sigma=(2, 3))
-    aug_perspective = iaa.PerspectiveTransform(scale=(0.05, 0.15))
-    aug_affine = iaa.Affine(scale=(0.5, 1.5))
+    if args.augmentation == 'e':
+        alpha = input('Alpha = ')
+        sigma = input('Sigma = ')
+        aug = iaa.ElasticTransformation(alpha=float(alpha), sigma=float(sigma))
+        aug_name = 'Elastic'
+    elif args.augmentation == 'a':
+        r1 = input('Range start = ')
+        r2 = input('Range end = ')
+        aug = iaa.Affine(scale=(float(r1), float(r2)))
+        aug_name = 'Affine'
+    elif args.augmentation == 'p':
+        r1 = input('Range start = ')
+        r2 = input('Range end = ')
+        aug = iaa.PerspectiveTransform(scale=(float(r1), float(r2)))
+        aug_name = 'Perspective'
 
     for image in image_list:
-        aug_elastic_list.append(aug_elastic.augment_images(image))
-        aug_perspective_list.append(aug_perspective.augment_images(image))
-        aug_affine_list.append(aug_affine.augment_images(image))
+        aug_list.append(aug.augment_images(image))
 
-    return aug_elastic_list, aug_perspective_list, aug_affine_list
+    return aug_list, aug_name
 
 
 '''
@@ -61,12 +88,65 @@ def save_images(image_list, name):
         imageio.imwrite(f'augmented_font_samples/{name}_{str(idx)}.png', image)
 
 
+def show_comparison():
+    global im
+    idx = 1
+    done = 'n'
+
+    ia.seed(1)
+    for filename in glob.glob('dump/*.png'):
+        if idx == args.letter:
+            im = Image.open(filename)
+            im = np.array(im, dtype=np.uint8)
+            break
+        idx += 1
+    image_list = [im]
+
+    if args.augmentation == 'e':
+        while done == 'n':
+            alpha = input('Alpha = ')
+            sigma = input('Sigma = ')
+            aug_elastic = iaa.ElasticTransformation(alpha=float(alpha), sigma=float(sigma))
+            image_list.append(aug_elastic.augment_images(im))
+            plot_comparison(image_list)
+            done = input('Quit y/n? ')
+
+    elif args.augmentation == 'a':
+        while done == 'n':
+            r1 = input('Range start = ')
+            r2 = input('Range end = ')
+            aug_affine = iaa.Affine(scale=(float(r1), float(r2)))
+            image_list.append(aug_affine.augment_images(im))
+            plot_comparison(image_list)
+            done = input('Quit y/n? ')
+
+    elif args.augmentation == 'p':
+        while done == 'n':
+            r1 = input('Range start = ')
+            r2 = input('Range end = ')
+            aug_perspective = iaa.PerspectiveTransform(scale=(float(r1), float(r2)))
+            image_list.append(aug_perspective.augment_images(im))
+            plot_comparison(image_list)
+            done = input('Quit y/n? ')
+
+
+def plot_comparison(image_list):
+    fig = plt.figure(figsize=(10, 10))
+    for idx, image in enumerate(image_list):
+        fig.add_subplot(1, len(image_list), idx + 1)
+        plt.imshow(image)
+    plt.show()
+
+
 def main():
-    images_list = load_images()
-    aug_elastic_list, aug_perspective_list, aug_affine = augment_images(images_list)
-    save_images(aug_elastic_list, 'elastic_transform')
-    save_images(aug_perspective_list, 'perspective_transform')
-    save_images(aug_affine, 'affine_transform')
+    if args.create_data == 't':
+
+        images_list = load_images()
+        aug_list, aug_name = augment_images(images_list)
+        save_images(aug_list, aug_name)
+        print("Augmented images saves successfully!")
+    else:
+        show_comparison()
 
 
 if __name__ == '__main__':
