@@ -1,5 +1,6 @@
-from typing import List, Tuple, Callable, TypeVar, Any, Dict, Set
+from typing import List, Tuple, TypeVar, Any, Dict, Set, Callable
 from typing import Optional as Maybe
+from typing import Mapping as Map
 from dataclasses import dataclass
 from abc import ABC
 

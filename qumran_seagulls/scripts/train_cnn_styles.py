@@ -52,6 +52,7 @@ def main(data_root: str,
          test_root: Maybe[str],
          save_path: Maybe[str],
          load_path: Maybe[str],
+         checkpoint: Maybe[str],
          print_log: bool
         ):
 
@@ -75,13 +76,27 @@ def main(data_root: str,
 
 
     print('Loading / Preprocessing dataset...')
-    ds = StylesDataset(data_root, with_preproc=crop_boxes_fixed(FIXED_SHAPE))
-    test_ds = StyleslDataset(test_root, with_preproc=crop_boxes_fixed(FIXED_SHAPE)) if test_root is not None else None
-
-    if not kfold:
-        # train once in a 80%-20% train-dev split
+    if not checkpoint:
+        ds = StylesDataset(data_root, with_preproc=crop_boxes_fixed(FIXED_SHAPE))
+        # 80%-20% random train-dev split
         dev_size = int(.2 * len(ds))
         train_ds, dev_ds = random_split(ds, [len(ds) - dev_size, dev_size], generator=SEED)
+        test_ds = StyleslDataset(test_root, with_preproc=crop_boxes_fixed(FIXED_SHAPE)) if test_root is not None else None
+
+    else:
+        # load splits from checkpoint
+        checkpoint = torch.load(checkpoint)
+        train_ds = [Character(image=s[0], label=s[1], style=s[2]) for s in checkpoint['train']]
+        dev_ds = [Character(image=s[0], label=s[1], style=s[2]) for s in checkpoint['dev']]
+        test_ds = [Character(image=s[0], label=s[1], style=s[2]) for s in checkpoint['test']] 
+
+
+    # train according to given flags
+    if kfold and checkpoint:
+        raise ValueError('checkpoint and kfold flags cannot be True at the same time...')
+
+    elif not kfold:
+        # train once in a 80%-20% train-dev split
         print('Training on random train-dev split...')
         best = train(train_ds, dev_ds, test_ds)
         print(f'Results random split: {best}')
@@ -100,14 +115,13 @@ def main(data_root: str,
         print(f'Average accuracy {kfold}-fold: {accu/kfold}')
 
 
-
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('-r', '--data_root', help='path to the directory of training data', type=str, default=ROOT_FOLDER)
     parser.add_argument('-tst', '--test_root', help='path to the directory of testing data (default no test)', type=str, default=None)
     parser.add_argument('-d', '--device', help='cpu or cuda', type=str, default='cuda')
-    parser.add_argument('-bs', '--batch_size', help='batch size to use for training', type=int, default=64)
+    parser.add_argument('-bs', '--batch_size', help='batch size to use for training', type=int, default=16)
     parser.add_argument('-e', '--num_epochs', help='how many epochs of training', type=int, default=15)
     parser.add_argument('-s', '--save_path', help='full path to save best model (default no save)', type=str, default=None)
     parser.add_argument('-wd', '--wd', help='weight decay to use for regularization', type=float, default=1e-02)
@@ -116,6 +130,9 @@ if __name__ == "__main__":
     parser.add_argument('-kfold', '--kfold', help='k-fold cross validation', type=int, default=0)
     parser.add_argument('--print_log', action='store_true', help='print training logs', default=False)
     parser.add_argument('-l', '--load_path', help='full path to load pretrained model (default no load)', type=str, default=None)
+    parser.add_argument('-chp', '--checkpoint', help='whether to use given file to load data', type=str, default=None)
     
     kwargs = vars(parser.parse_args())
     main(**kwargs)
+
+# best dev:{'epoch': 18, 'loss': 0.86244, 'accuracy': 0.6225}, @test: {'loss': 0.90476, 'accuracy': 0.5828}

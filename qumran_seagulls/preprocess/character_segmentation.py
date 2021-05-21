@@ -14,6 +14,51 @@ PEAKS_MERGE_THRESH = 10
 WIDTH_SCALER = 0.7
 
 
+def visualize(stuff: Dict[str, Any]):
+    import matplotlib.pyplot as plt 
+    fig, (ax1, ax2) = plt.subplots(2, sharex=True)
+    fig.suptitle('Character segmentation - adaptive pixel count')
+    ax1.imshow(stuff['line'])
+    ax1.vlines(stuff['segments_keep'], 0, stuff['line'].shape[0], color="C1", linestyle='solid', label='true')
+    ax1.vlines(stuff['segments'], 0, stuff['line'].shape[0], color="C1", linestyle='dotted', label='false')
+    ax2.plot(stuff['vertical'], 'b-', label='vertical')
+    ax2.plot(stuff['binary'] * 20, 'y--', label='binary')
+    ax2.plot(stuff['peaks0'], [20] * len(stuff['peaks0']), 'rx', label='0-peaks')
+    ax2.plot(stuff['peaks1'], [20] * len(stuff['peaks1']), 'gx', label='1-peaks')
+    ax2.vlines(stuff['segments_keep'], 0, stuff['vertical'].max(), color="C1", linestyle='solid', label='true')
+    ax2.vlines(stuff['segments'], 0, stuff['vertical'].max(), color="C1", linestyle='dotted', label='false')
+    ax2.grid(True)
+    plt.legend()
+    plt.show()
+
+
+def run_once(line: array, count_thresh: int, kappa: float, width_thresh: int) -> List[array]:
+    # vertical pixel histogram, binarized with threshold
+    histogram = np.where(line > 0, 1, 0).sum(axis=0)
+    binarized = np.where(histogram > count_thresh, 1, 0)
+
+    # find peaks and their widths
+    peaks, _ = find_peaks(binarized)
+    widths = peak_widths(binarized, peaks)[0]
+    
+    # identify narrow peaks
+    w_thresh = widths.mean() * kappa
+    flags = [1 if w >= w_thresh else 0 for w in widths]
+
+    # get proposed segments
+    spans = [(int(p-w/2), int(p+w/2)) for p, w in zip(peaks, widths)]
+    segments = [(s[1] + spans[i+1][0]) // 2 for i, s in enumerate(spans[:-1])]
+    segments_keep = [(s[1] + spans[i+1][0]) // 2 for i, s in enumerate(spans[:-1]) if spans[i+1][0] - s[1] >= width_thresh]
+
+    # plot proposed segmentation
+    visualize({'line': line, 'vertical': histogram, 'binary': binarized, 
+               'segments': segments, 'segments_keep': segments_keep,
+               'peaks0': [p for p, f in zip(peaks, flags) if not f], 
+               'peaks1': [p for p, f in zip(peaks, flags) if f]
+              })
+
+    return 1
+
 
 # identify consecutive 0s in a 1-d array
 def zero_runs(arr: array) -> List[List[int]]:
@@ -156,22 +201,3 @@ def segment_chars_from_line(line: array,
     # crop original image to segments
     ...
     return 1
-
-
-def visualize(stuff: Dict[str, Any]):
-    import matplotlib.pyplot as plt 
-    fig, (ax1, ax3, ax4) = plt.subplots(3, sharex=True)
-    fig.suptitle('Character segmentation - adaptive pixel count')
-    ax1.imshow(stuff['line'])
-    ax3.imshow(stuff['mask'])
-    ax3.vlines(stuff['segments'], 0, 60, color="C1", linestyle='solid', label='true')
-    ax3.vlines(stuff['segments_cut'], 0, 60, color="C1", linestyle='dotted', label='false')
-    ax4.plot(stuff['vertical'], 'b-', label='vertical')
-    ax4.plot(stuff['binary'] * 20, 'y--', label='binary')
-    ax4.plot(stuff['peaks0'], [20] * len(stuff['peaks0']), 'rx', label='0-peaks')
-    ax4.plot(stuff['peaks1'], [20] * len(stuff['peaks1']), 'gx', label='1-peaks')
-    ax4.vlines(stuff['segments'], 0, 60, color="C1", linestyle='solid', label='true')
-    ax4.vlines(stuff['segments_cut'], 0, 60, color="C1", linestyle='dotted', label='false')
-    ax4.grid(True)
-    plt.legend()
-    plt.show()
