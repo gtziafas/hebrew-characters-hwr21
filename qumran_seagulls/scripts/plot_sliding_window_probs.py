@@ -20,7 +20,7 @@ def plot_sliding_window(img: np.ndarray, cnn: BaselineCNN, step_size: int = 10):
     predictions = np.zeros((N_CLASSES + 1, int(w / step_size) + 1))  # N_CLASSES + 1 because we will use the first row for the window position
 
     np.set_printoptions(edgeitems=30, linewidth=100000,
-                        formatter=dict(float=lambda x: "%.3d" % x))
+                        formatter=dict(float=lambda x: "%+.3f" % x))
     window_ctr = 0
 
     for window_right_edge in range(w, h, -step_size):  # starting from the right, we go left, until we hit h, i.e. the last square window
@@ -32,7 +32,7 @@ def plot_sliding_window(img: np.ndarray, cnn: BaselineCNN, step_size: int = 10):
 
         x = torch.tensor(resized_roi.astype(np.float32)).unsqueeze(0)[None, ...]
         print(x)
-        y = cnn(x)
+        y = cnn(x).softmax(dim=-1)
         print(y)
         predictions[1:, window_ctr] = y.detach()
 
@@ -42,7 +42,7 @@ def plot_sliding_window(img: np.ndarray, cnn: BaselineCNN, step_size: int = 10):
 
     plt.imshow(img)
     for cls in range(N_CLASSES):
-        plt.plot(predictions[0], h * 2  - 10*predictions[cls+1])  # plot the first row, along with each one of the other rows
+        plt.plot(predictions[0], h * 2 - h*predictions[cls+1])  # plot the first row, along with each one of the other rows
     plt.show()
 
 
