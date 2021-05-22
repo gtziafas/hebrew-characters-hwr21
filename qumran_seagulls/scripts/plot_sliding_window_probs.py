@@ -28,10 +28,13 @@ def plot_sliding_window(img: np.ndarray, cnn: BaselineCNN, step_size: int = 10):
         roi = get_roi(window)
         resized_roi = cv2.resize(roi, input_dim, interpolation=cv2.INTER_AREA)
 
-        predictions[0, int(window_right_edge / step_size)] = window_right_edge  # this is needed for the plot
+        predictions[0, int(window_right_edge / step_size)] = window_right_edge  # window position, this is the x position needed for the plot
 
-        # print(torch.tensor(resized_roi).unsqueeze(0).shape)
-        # predictions[1:, window_ctr] = cnn(torch.tensor(resized_roi).unsqueeze(0))
+        x = torch.tensor(resized_roi.astype(np.float32)).unsqueeze(0)[None, ...]
+        print(x)
+        y = cnn(x)
+        print(y)
+        predictions[1:, window_ctr] = y.detach()
 
         window_ctr += 1  # could be more complicated, I just used a second counter
 
@@ -39,7 +42,7 @@ def plot_sliding_window(img: np.ndarray, cnn: BaselineCNN, step_size: int = 10):
 
     plt.imshow(img)
     for cls in range(N_CLASSES):
-        plt.plot(predictions[0], h - predictions[cls+1])
+        plt.plot(predictions[0], h * 2  - 10*predictions[cls+1])  # plot the first row, along with each one of the other rows
     plt.show()
 
 
