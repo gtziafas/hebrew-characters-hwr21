@@ -21,7 +21,6 @@ def plot_sliding_window(img: np.ndarray, cnn: BaselineCNN, step_size: int = 10):
 
     np.set_printoptions(edgeitems=30, linewidth=100000,
                         formatter=dict(float=lambda x: "%+.3f" % x))
-    window_ctr = 0
 
     for window_right_edge in range(w, h, -step_size):  # starting from the right, we go left, until we hit h, i.e. the last square window
         window = img[0:h, window_right_edge - h]  # crop the window
@@ -34,15 +33,22 @@ def plot_sliding_window(img: np.ndarray, cnn: BaselineCNN, step_size: int = 10):
         print(x)
         y = cnn(x).softmax(dim=-1)
         print(y)
-        predictions[1:, window_ctr] = y.detach()
+        predictions[1:, int(window_right_edge / step_size)] = y.detach()
 
-        window_ctr += 1  # could be more complicated, I just used a second counter
+    # delete columns that contain all 0s (first few cols on the right)
+    idx = np.argwhere(np.all(predictions[..., :] == 0, axis=0))
+    predictions = np.delete(predictions, idx, axis=1)
 
     print(f"predictions matrix:\n{predictions}")
 
     plt.imshow(img)
     for cls in range(N_CLASSES):
-        plt.plot(predictions[0], h * 2 - h*predictions[cls+1])  # plot the first row, along with each one of the other rows
+        plt.plot(predictions[0] - h/2, h * 2 - h*predictions[cls+1])
+                # x pos: right edge of window - half the height (since window is square) will give the center of the window
+                # y pos: imshow flips axes so there is a minus in front of the predictions, scale it up by h and move it below the image
+    plt.ylim(ymin=0, ymax=2*h)
+    plt.yticks([0,h,2*h])
+    plt.gca().invert_yaxis()
     plt.show()
 
 
