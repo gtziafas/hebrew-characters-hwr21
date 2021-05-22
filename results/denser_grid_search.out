@@ -1,0 +1,253 @@
+--- CNN ---
+
+BaselineCNN(
+  (block1): Sequential(
+    (0): Conv2d(1, 16, kernel_size=(3, 3), stride=(1, 1))
+    (1): GELU()
+    (2): MaxPool2d(kernel_size=3, stride=3, padding=0, dilation=1, ceil_mode=False)
+    (3): Dropout(p=0.0, inplace=False)
+  )
+  (block2): Sequential(
+    (0): Conv2d(16, 32, kernel_size=(3, 3), stride=(1, 1))
+    (1): GELU()
+    (2): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+    (3): Dropout(p=0.1, inplace=False)
+  )
+  (block3): Sequential(
+    (0): Conv2d(32, 64, kernel_size=(3, 3), stride=(1, 1))
+    (1): GELU()
+    (2): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+    (3): Dropout(p=0.5, inplace=False)
+  )
+  (cls): Linear(in_features=1024, out_features=27, bias=True)
+)
+
+
+
+--- HYPER-PARAMS ---
+
+default: BATCH SIZE 		@ 64
+	  LEARNING RATE 	@ 0.001
+	  WEIGHT DECAY		@ 0.01
+          DROPOUT		@ ...checking...!
+	  EARLY STOPPING	@ -
+
+---------------------------------------------------------------------------------
+
+
+DROPOUT @ 0.0 , 0.0 :
+
+
+Results 10-fold, iteration 1: {'epoch': 21, 'loss': 0.37703, 'accuracy': 0.9386}
+Results 10-fold, iteration 2: {'epoch': 23, 'loss': 0.29725, 'accuracy': 0.944}
+Results 10-fold, iteration 3: {'epoch': 8, 'loss': 0.39033, 'accuracy': 0.926}
+Results 10-fold, iteration 4: {'epoch': 21, 'loss': 0.31888, 'accuracy': 0.9513}
+Results 10-fold, iteration 5: {'epoch': 9, 'loss': 0.22571, 'accuracy': 0.9567}
+Results 10-fold, iteration 6: {'epoch': 16, 'loss': 0.31771, 'accuracy': 0.9567}
+Results 10-fold, iteration 7: {'epoch': 22, 'loss': 0.48029, 'accuracy': 0.944}
+Results 10-fold, iteration 8: {'epoch': 14, 'loss': 0.44244, 'accuracy': 0.9295}
+Results 10-fold, iteration 9: {'epoch': 13, 'loss': 0.30065, 'accuracy': 0.9421}
+Results 10-fold, iteration 10: {'epoch': 18, 'loss': 0.20292, 'accuracy': 0.9566}
+Average accuracy 10-fold: 0.9445499999999999
+---------------------------------------------------------------------------------
+
+
+DROPOUT @ 0.0 , 0.25 :
+
+
+Results 10-fold, iteration 1: {'epoch': 20, 'loss': 0.37732, 'accuracy': 0.9368}
+Results 10-fold, iteration 2: {'epoch': 19, 'loss': 0.20116, 'accuracy': 0.9549}
+Results 10-fold, iteration 3: {'epoch': 17, 'loss': 0.3962, 'accuracy': 0.935}
+Results 10-fold, iteration 4: {'epoch': 15, 'loss': 0.24963, 'accuracy': 0.9495}
+Results 10-fold, iteration 5: {'epoch': 14, 'loss': 0.20158, 'accuracy': 0.9603}
+Results 10-fold, iteration 6: {'epoch': 24, 'loss': 0.2829, 'accuracy': 0.9567}
+Results 10-fold, iteration 7: {'epoch': 23, 'loss': 0.40484, 'accuracy': 0.9513}
+Results 10-fold, iteration 8: {'epoch': 15, 'loss': 0.3383, 'accuracy': 0.9421}
+Results 10-fold, iteration 9: {'epoch': 25, 'loss': 0.29548, 'accuracy': 0.9494}
+Results 10-fold, iteration 10: {'epoch': 25, 'loss': 0.16025, 'accuracy': 0.9638}
+Average accuracy 10-fold: 0.94998	
+---------------------------------------------------------------------------------
+
+
+DROPOUT @ 0.0 , 0.33 :
+
+
+Results 10-fold, iteration 1: {'epoch': 22, 'loss': 0.328, 'accuracy': 0.9458}
+Results 10-fold, iteration 2: {'epoch': 21, 'loss': 0.22253, 'accuracy': 0.9531}
+Results 10-fold, iteration 3: {'epoch': 25, 'loss': 0.39424, 'accuracy': 0.9404}
+Results 10-fold, iteration 4: {'epoch': 23, 'loss': 0.27536, 'accuracy': 0.9513}
+Results 10-fold, iteration 5: {'epoch': 17, 'loss': 0.19046, 'accuracy': 0.9621}
+Results 10-fold, iteration 6: {'epoch': 24, 'loss': 0.25473, 'accuracy': 0.9513}
+Results 10-fold, iteration 7: {'epoch': 22, 'loss': 0.39076, 'accuracy': 0.9458}
+Results 10-fold, iteration 8: {'epoch': 22, 'loss': 0.40461, 'accuracy': 0.9385}
+Results 10-fold, iteration 9: {'epoch': 14, 'loss': 0.25388, 'accuracy': 0.9494}
+Results 10-fold, iteration 10: {'epoch': 22, 'loss': 0.16338, 'accuracy': 0.9602}
+Average accuracy 10-fold: 0.9497899999999999	
+---------------------------------------------------------------------------------
+
+DROPOUT @ 0.0 , 0.5 :
+
+
+Results 10-fold, iteration 1: {'epoch': 20, 'loss': 0.27587, 'accuracy': 0.944}
+Results 10-fold, iteration 2: {'epoch': 19, 'loss': 0.18425, 'accuracy': 0.9549}
+Results 10-fold, iteration 3: {'epoch': 18, 'loss': 0.32151, 'accuracy': 0.9332}
+Results 10-fold, iteration 4: {'epoch': 16, 'loss': 0.21376, 'accuracy': 0.9513}
+Results 10-fold, iteration 5: {'epoch': 24, 'loss': 0.19888, 'accuracy': 0.9603}
+Results 10-fold, iteration 6: {'epoch': 23, 'loss': 0.23515, 'accuracy': 0.9585}
+Results 10-fold, iteration 7: {'epoch': 15, 'loss': 0.23766, 'accuracy': 0.9495}
+Results 10-fold, iteration 8: {'epoch': 21, 'loss': 0.31209, 'accuracy': 0.9403}
+Results 10-fold, iteration 9: {'epoch': 18, 'loss': 0.24598, 'accuracy': 0.9494}
+Results 10-fold, iteration 10: {'epoch': 20, 'loss': 0.14686, 'accuracy': 0.9656}
+Average accuracy 10-fold: 0.9507	
+---------------------------------------------------------------------------------
+
+
+DROPOUT @ 0.0 , 0.65 :
+
+
+Results 10-fold, iteration 1: {'epoch': 21, 'loss': 0.25662, 'accuracy': 0.9477}
+Results 10-fold, iteration 2: {'epoch': 23, 'loss': 0.18833, 'accuracy': 0.944}
+Results 10-fold, iteration 3: {'epoch': 21, 'loss': 0.27942, 'accuracy': 0.9458}
+Results 10-fold, iteration 4: {'epoch': 19, 'loss': 0.18597, 'accuracy': 0.9513}
+Results 10-fold, iteration 5: {'epoch': 25, 'loss': 0.15893, 'accuracy': 0.9639}
+Results 10-fold, iteration 6: {'epoch': 25, 'loss': 0.16832, 'accuracy': 0.9621}
+Results 10-fold, iteration 7: {'epoch': 23, 'loss': 0.22067, 'accuracy': 0.9549}
+Results 10-fold, iteration 8: {'epoch': 14, 'loss': 0.28869, 'accuracy': 0.9385}
+Results 10-fold, iteration 9: {'epoch': 25, 'loss': 0.21344, 'accuracy': 0.9548}
+Results 10-fold, iteration 10: {'epoch': 18, 'loss': 0.15486, 'accuracy': 0.9602}
+Average accuracy 10-fold: 0.95232	
+---------------------------------------------------------------------------------
+
+DROPOUT @ 0.05 , 0.25 :
+
+
+Results 10-fold, iteration 1: {'epoch': 21, 'loss': 0.28979, 'accuracy': 0.9422}
+Results 10-fold, iteration 2: {'epoch': 20, 'loss': 0.24011, 'accuracy': 0.9513}
+Results 10-fold, iteration 3: {'epoch': 21, 'loss': 0.37751, 'accuracy': 0.9422}
+Results 10-fold, iteration 4: {'epoch': 18, 'loss': 0.22079, 'accuracy': 0.9495}
+Results 10-fold, iteration 5: {'epoch': 17, 'loss': 0.18683, 'accuracy': 0.9585}
+Results 10-fold, iteration 6: {'epoch': 17, 'loss': 0.23833, 'accuracy': 0.9603}
+Results 10-fold, iteration 7: {'epoch': 19, 'loss': 0.3169, 'accuracy': 0.9477}
+Results 10-fold, iteration 8: {'epoch': 13, 'loss': 0.30462, 'accuracy': 0.9331}
+Results 10-fold, iteration 9: {'epoch': 20, 'loss': 0.30124, 'accuracy': 0.9494}
+Results 10-fold, iteration 10: {'epoch': 25, 'loss': 0.19332, 'accuracy': 0.9566}
+Average accuracy 10-fold: 0.9490800000000001	
+---------------------------------------------------------------------------------
+
+DROPOUT @ 0.05 , 0.33 :
+
+
+Results 10-fold, iteration 1: {'epoch': 21, 'loss': 0.26806, 'accuracy': 0.9495}
+Results 10-fold, iteration 2: {'epoch': 17, 'loss': 0.19379, 'accuracy': 0.9531}
+Results 10-fold, iteration 3: {'epoch': 21, 'loss': 0.37041, 'accuracy': 0.9368}
+Results 10-fold, iteration 4: {'epoch': 16, 'loss': 0.21079, 'accuracy': 0.9549}
+Results 10-fold, iteration 5: {'epoch': 17, 'loss': 0.18233, 'accuracy': 0.9639}
+Results 10-fold, iteration 6: {'epoch': 19, 'loss': 0.20759, 'accuracy': 0.9639}
+Results 10-fold, iteration 7: {'epoch': 25, 'loss': 0.30791, 'accuracy': 0.9477}
+Results 10-fold, iteration 8: {'epoch': 21, 'loss': 0.34125, 'accuracy': 0.9403}
+Results 10-fold, iteration 9: {'epoch': 24, 'loss': 0.27748, 'accuracy': 0.9494}
+Results 10-fold, iteration 10: {'epoch': 24, 'loss': 0.15, 'accuracy': 0.9584}
+Average accuracy 10-fold: 0.9517899999999999
+---------------------------------------------------------------------------------
+
+
+DROPOUT @ 0.05 , 0.5: 
+
+
+Results 10-fold, iteration 1: {'epoch': 20, 'loss': 0.24962, 'accuracy': 0.9422}
+Results 10-fold, iteration 2: {'epoch': 24, 'loss': 0.18527, 'accuracy': 0.9531}
+Results 10-fold, iteration 3: {'epoch': 20, 'loss': 0.31328, 'accuracy': 0.9404}
+Results 10-fold, iteration 4: {'epoch': 16, 'loss': 0.19398, 'accuracy': 0.9513}
+Results 10-fold, iteration 5: {'epoch': 22, 'loss': 0.17994, 'accuracy': 0.9657}
+Results 10-fold, iteration 6: {'epoch': 19, 'loss': 0.19394, 'accuracy': 0.9621}
+Results 10-fold, iteration 7: {'epoch': 15, 'loss': 0.24902, 'accuracy': 0.9531}
+Results 10-fold, iteration 8: {'epoch': 17, 'loss': 0.29921, 'accuracy': 0.9403}
+Results 10-fold, iteration 9: {'epoch': 22, 'loss': 0.24274, 'accuracy': 0.9548}
+Results 10-fold, iteration 10: {'epoch': 20, 'loss': 0.15006, 'accuracy': 0.962}
+Average accuracy 10-fold: 0.9525
+---------------------------------------------------------------------------------
+
+
+DROPOUT @ 0.05 , 0.65: 
+
+
+Results 10-fold, iteration 1: {'epoch': 24, 'loss': 0.28565, 'accuracy': 0.9404}
+Results 10-fold, iteration 2: {'epoch': 21, 'loss': 0.17416, 'accuracy': 0.9513}
+Results 10-fold, iteration 3: {'epoch': 21, 'loss': 0.2927, 'accuracy': 0.9368}
+Results 10-fold, iteration 4: {'epoch': 23, 'loss': 0.16967, 'accuracy': 0.9531}
+Results 10-fold, iteration 5: {'epoch': 25, 'loss': 0.17647, 'accuracy': 0.9603}
+Results 10-fold, iteration 6: {'epoch': 23, 'loss': 0.18182, 'accuracy': 0.9585}
+Results 10-fold, iteration 7: {'epoch': 20, 'loss': 0.24845, 'accuracy': 0.9513}
+Results 10-fold, iteration 8: {'epoch': 23, 'loss': 0.28447, 'accuracy': 0.9421}
+Results 10-fold, iteration 9: {'epoch': 21, 'loss': 0.2015, 'accuracy': 0.9476}
+Results 10-fold, iteration 10: {'epoch': 20, 'loss': 0.15255, 'accuracy': 0.9584}
+Average accuracy 10-fold: 0.9499799999999998
+---------------------------------------------------------------------------------
+
+
+DROPOUT @ 0.1 , 0.25 :  
+
+
+Results 10-fold, iteration 1: {'epoch': 19, 'loss': 0.27819, 'accuracy': 0.9477}
+Results 10-fold, iteration 2: {'epoch': 21, 'loss': 0.21093, 'accuracy': 0.9567}
+Results 10-fold, iteration 3: {'epoch': 24, 'loss': 0.39515, 'accuracy': 0.9422}
+Results 10-fold, iteration 4: {'epoch': 16, 'loss': 0.20202, 'accuracy': 0.9458}
+Results 10-fold, iteration 5: {'epoch': 21, 'loss': 0.18555, 'accuracy': 0.9603}
+Results 10-fold, iteration 6: {'epoch': 24, 'loss': 0.20939, 'accuracy': 0.9621}
+Results 10-fold, iteration 7: {'epoch': 22, 'loss': 0.36861, 'accuracy': 0.9513}
+Results 10-fold, iteration 8: {'epoch': 13, 'loss': 0.31292, 'accuracy': 0.9331}
+Results 10-fold, iteration 9: {'epoch': 20, 'loss': 0.28544, 'accuracy': 0.9458}
+Results 10-fold, iteration 10: {'epoch': 20, 'loss': 0.18574, 'accuracy': 0.9584}
+Average accuracy 10-fold: 0.95034
+---------------------------------------------------------------------------------
+
+
+DROPOUT @ 0.1 , 0.33 :
+
+
+Results 10-fold, iteration 2: {'epoch': 18, 'loss': 0.22241, 'accuracy': 0.9495}
+Results 10-fold, iteration 3: {'epoch': 17, 'loss': 0.33812, 'accuracy': 0.935}
+Results 10-fold, iteration 4: {'epoch': 14, 'loss': 0.20301, 'accuracy': 0.9477}
+Results 10-fold, iteration 5: {'epoch': 24, 'loss': 0.1892, 'accuracy': 0.9621}
+Results 10-fold, iteration 6: {'epoch': 19, 'loss': 0.21479, 'accuracy': 0.9603}
+Results 10-fold, iteration 7: {'epoch': 25, 'loss': 0.30571, 'accuracy': 0.9495}
+Results 10-fold, iteration 8: {'epoch': 14, 'loss': 0.29482, 'accuracy': 0.9421}
+Results 10-fold, iteration 9: {'epoch': 24, 'loss': 0.24402, 'accuracy': 0.9548}
+Results 10-fold, iteration 10: {'epoch': 12, 'loss': 0.1527, 'accuracy': 0.9548}
+Average accuracy 10-fold: 0.9501600000000001
+---------------------------------------------------------------------------------
+
+
+DROPOUT @ 0.1 , 0.5 :  (pere)
+
+
+Results 10-fold, iteration 1: {'epoch': 13, 'loss': 0.25049, 'accuracy': 0.9422}
+Results 10-fold, iteration 2: {'epoch': 24, 'loss': 0.18184, 'accuracy': 0.9549}
+Results 10-fold, iteration 3: {'epoch': 21, 'loss': 0.28219, 'accuracy': 0.9404}
+Results 10-fold, iteration 4: {'epoch': 22, 'loss': 0.20898, 'accuracy': 0.9531}
+Results 10-fold, iteration 5: {'epoch': 21, 'loss': 0.15946, 'accuracy': 0.9711}
+Results 10-fold, iteration 6: {'epoch': 25, 'loss': 0.19404, 'accuracy': 0.9603}
+Results 10-fold, iteration 7: {'epoch': 22, 'loss': 0.25991, 'accuracy': 0.9531}
+Results 10-fold, iteration 8: {'epoch': 24, 'loss': 0.24833, 'accuracy': 0.9439}
+Results 10-fold, iteration 9: {'epoch': 16, 'loss': 0.21013, 'accuracy': 0.953}
+Results 10-fold, iteration 10: {'epoch': 18, 'loss': 0.1399, 'accuracy': 0.9602}
+Average accuracy 10-fold: 0.9532200000000002
+---------------------------------------------------------------------------------
+
+
+DROPOUT @ 0.1 , 0.65 :  
+
+
+Results 10-fold, iteration 1: {'epoch': 17, 'loss': 0.27815, 'accuracy': 0.9368}
+Results 10-fold, iteration 2: {'epoch': 21, 'loss': 0.18422, 'accuracy': 0.9477}
+Results 10-fold, iteration 3: {'epoch': 17, 'loss': 0.3069, 'accuracy': 0.9422}
+Results 10-fold, iteration 4: {'epoch': 23, 'loss': 0.17561, 'accuracy': 0.9549}
+Results 10-fold, iteration 5: {'epoch': 21, 'loss': 0.18372, 'accuracy': 0.9603}
+Results 10-fold, iteration 6: {'epoch': 25, 'loss': 0.16014, 'accuracy': 0.9621}
+Results 10-fold, iteration 7: {'epoch': 23, 'loss': 0.22844, 'accuracy': 0.9531}
+Results 10-fold, iteration 8: {'epoch': 25, 'loss': 0.27129, 'accuracy': 0.9439}
+Results 10-fold, iteration 9: {'epoch': 18, 'loss': 0.22457, 'accuracy': 0.9494}
+Results 10-fold, iteration 10: {'epoch': 18, 'loss': 0.15257, 'accuracy': 0.9584}
+Average accuracy 10-fold: 0.9508800000000001
+---------------------------------------------------------------------------------
+

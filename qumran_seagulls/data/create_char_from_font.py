@@ -2,7 +2,7 @@
 from PIL import Image, ImageFont, ImageDraw
 
 #Load the font and set the font size to 42
-font = ImageFont.truetype('data/habbakuk/Habbakuk.TTF', 42)
+font = ImageFont.truetype('/home/niels/Documents/UNI/Master/Hand Writing Recognition/hebrew-characters-hwr21/data/habbakuk/Habbakuk.TTF', 42)
 
 
 #Character mapping for each of the 27 tokens

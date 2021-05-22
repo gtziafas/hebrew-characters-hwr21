@@ -32,6 +32,7 @@ def show_many(imgs: List[array], legends: Maybe[List[str]] = None):
         key = cv2.waitKey(1) & 0xff
         if key == ord('q'):
             break
+    destroy()
 
 
 def destroy():
@@ -102,14 +103,14 @@ def filter_large(desired_shape: Tuple[int, int]) -> Callable[[List[array]], List
         cropped_imgs = crop_boxes_dynamic([imgs[idx] for idx in large_idces])
 
         # return all thresholded and inverted and large properly replaced
-        return [cv2.threshold(img, 0, 0xff, cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)[1] if i not in large_idces else cropped_imgs[large_idces.index(i)] for i, img in enumerate(imgs)]
+        return [thresh_invert(img) if i not in large_idces else cropped_imgs[large_idces.index(i)] for i, img in enumerate(imgs)]
     
     return _filter_large
 
 
 def crop_boxes_dynamic(imgs: List[array]) -> List[array]:
     # threshold and invert
-    imgs = [cv2.threshold(i, 0, 0xff, cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)[1] for i in imgs]
+    imgs = thresh_invert_many(imgs)
     
     # find contours for each image
     contours = [cv2.findContours(i, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0] for i in imgs]
@@ -129,7 +130,7 @@ def crop_boxes_fixed(desired_shape: Tuple[int, int]) -> Callable[[List[array]], 
 
     def _crop_boxes_fixed(imgs: List[array]) -> List[array]:
         # threshold and invert
-        imgs = [cv2.threshold(i, 0, 0xff, cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)[1] for i in imgs]
+        imgs = thresh_invert_many(imgs)
         
         # identify images larger than desired resolution
         large_idces = [idx for idx, i in enumerate(imgs) if i.shape[0] > H or i.shape[1] > W]
