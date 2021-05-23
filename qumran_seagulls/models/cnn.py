@@ -1,5 +1,5 @@
 from ..types import *
-from ..utils import pad_with_frame, filter_large
+from ..utils import pad_with_frame, filter_large, crop_boxes_fixed
 
 import torch.nn as nn 
 from torch import tensor, stack, no_grad, load
@@ -39,8 +39,9 @@ class BaselineCNN(nn.Module):
     @no_grad()
     def predict_scores(self, imgs: List[array], device: str='cpu') -> Tensor:
         self.eval()
-        filtered = filter_large(self.inp_shape)(imgs)
-        padded = pad_with_frame(filtered, self.inp_shape)
+        # filtered = filter_large(self.inp_shape)(imgs)
+        # padded = pad_with_frame(filtered, self.inp_shape)
+        padded = crop_boxes_fixed(self.inp_shape)(imgs)
         tensorized = stack([tensor(img / 0xff, dtype=floatt, device=device) for img in padded])
         scores = self.forward(tensorized.unsqueeze(1))
         return scores
