@@ -35,7 +35,6 @@ class Node():
 
 
 def blocker_dist(child,image):
-    C = 250
     d_y = []
     for new_pos in [1,-1]:
         i = 1
