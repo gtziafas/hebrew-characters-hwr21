@@ -23,19 +23,14 @@ def plot_sliding_window(img: np.ndarray, cnn: BaselineCNN, step_size: int = 10):
                         formatter=dict(float=lambda x: "%+.3f" % x))
 
     for window_right_edge in range(w, h, -step_size):  # starting from the right, we go left, until we hit h, i.e. the last square window
-        window = img[0:h, window_right_edge - h]  # crop the window
-        roi = get_roi(window)
-        resized_roi = cv2.resize(roi, input_dim, interpolation=cv2.INTER_AREA)
-
         predictions[0, int(window_right_edge / step_size)] = window_right_edge  # window position, this is the x position needed for the plot
 
-        x = torch.tensor(resized_roi.astype(np.float32)).unsqueeze(0)[None, ...]
-        print(x)
-        y = cnn(x).softmax(dim=-1)
+        window = img[0:h, window_right_edge - h:window_right_edge]  # crop the window
+        y = cnn.predict_scores(imgs=[window], device='cpu')
         print(y)
         predictions[1:, int(window_right_edge / step_size)] = y.detach()
 
-    # delete columns that contain all 0s (first few cols on the right)
+    # delete columns that contain all 0s (first few cols on the left)
     idx = np.argwhere(np.all(predictions[..., :] == 0, axis=0))
     predictions = np.delete(predictions, idx, axis=1)
 
@@ -43,22 +38,23 @@ def plot_sliding_window(img: np.ndarray, cnn: BaselineCNN, step_size: int = 10):
 
     plt.imshow(img)
     for cls in range(N_CLASSES):
-        plt.plot(predictions[0] - h/2, h * 2 - h*predictions[cls+1])
-                # x pos: right edge of window - half the height (since window is square) will give the center of the window
-                # y pos: imshow flips axes so there is a minus in front of the predictions, scale it up by h and move it below the image
-    plt.ylim(ymin=0, ymax=2*h)
-    plt.yticks([0,h,2*h])
+        plt.plot(predictions[0] - h / 2, h * 2 - h * predictions[cls + 1])
+        # x pos: right edge of window - half the height (since window is square) will give the center of the window
+        # y pos: imshow flips axes so there is a minus in front of the predictions, scale it up by h and move it below the image
+    plt.ylim(ymin=0, ymax=2 * h)
+    plt.yticks([0, h, 2 * h])
     plt.gca().invert_yaxis()
     plt.show()
 
 
 def main():
     example_img_path = "../../data/lines_cropped/P106-Fg002-R-C01-R01/line_5.jpg"
-    example_img = (255 - cv2.imread(str(example_img_path), cv2.IMREAD_GRAYSCALE)) / 255
+    example_img = 0xff - cv2.imread(str(example_img_path), cv2.IMREAD_GRAYSCALE)
 
     saved_cnn = default_cnn_monkbrill()
     saved_cnn.load_state_dict(torch.load(CNN_PATH))
 
+    print(example_img)
     plot_sliding_window(example_img, saved_cnn, step_size=10)
 
 
