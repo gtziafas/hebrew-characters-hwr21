@@ -17,7 +17,8 @@ def get_sorted_minima(image):
     sorted_minima = sorted(filtered_minima)
     return sorted_minima
 
-class Node():
+
+class Node:
     """A node class for A* Pathfinding"""
 
     def __init__(self, parent=None, position=None):
@@ -164,6 +165,7 @@ def astar(image, start, end):
             # Add the child to the open list
             open_list.append(child)
 
+
 def draw_line(example_img_path, path):
     im = Image.open(example_img_path)
     d = ImageDraw.Draw(im)
@@ -173,10 +175,11 @@ def draw_line(example_img_path, path):
 
     im.save("P123-Fg001-R-C01-R01.jpeg")
 
+
 def main():
-    example_img_path = r"C:\Users\anjal\Projects\Dead Sea scrolls\hebrew-characters-hwr21\data\images\P123-Fg001-R-C01-R01-binarized.jpg"
+    example_img_path = r"../data/images/P123-Fg001-R-C01-R01-binarized.jpg"
     image = (255 - cv2.imread(str(example_img_path), cv2.IMREAD_GRAYSCALE)) / 255
-    minima = segment_img(image)
+    minima = get_sorted_minima(image)
     # image = (255 - cv2.imread(str(example_img_path), cv2.IMREAD_GRAYSCALE)) / 255
     all_path=[]
     for pos in minima[1:2]:
@@ -186,6 +189,7 @@ def main():
         print(path)
         all_path.append(path)
     draw_line(example_img_path,all_path)
+
 
 if __name__ == '__main__':
     main()
