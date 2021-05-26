@@ -3,7 +3,7 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 
-from qumran_seagulls.persistence1d import RunPersistence
+from persistence1d import RunPersistence
 
 debug = True
 min_persistence = 150
@@ -40,13 +40,12 @@ def segment_img(image):
         plt.show()
 
     crop_straight_from_minima(image, sorted_minima)
-    return sorted_minima
 
 
 def main():
     example_img_path = "../data/images/P123-Fg001-R-C01-R01-binarized.jpg"
     example_img = (255 - cv2.imread(str(example_img_path), cv2.IMREAD_GRAYSCALE)) / 255
-    minima=segment_img(example_img)
+    segment_img(example_img)
 
 
 if __name__ == "__main__":
