@@ -1,10 +1,21 @@
 # from persistence1d import RunPersistence
 import cv2
-from pandas import np
-import matplotlib as plt
-from qumran_seagulls.segment_lines_astar import segment_img
+import numpy as np
 from PIL import Image, ImageDraw
 
+from qumran_seagulls.persistence1d import RunPersistence
+
+min_persistence = 150
+C = 250
+
+
+def get_sorted_minima(image):
+    histogram = np.sum(image, axis=1)
+    extrema = RunPersistence(histogram)
+    minima = extrema[0::2]  # odd elements are minima
+    filtered_minima = [t[0] for t in minima if t[1] > min_persistence]
+    sorted_minima = sorted(filtered_minima)
+    return sorted_minima
 
 class Node():
     """A node class for A* Pathfinding"""
