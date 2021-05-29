@@ -61,7 +61,7 @@ def astar(image, start, end):
     start_node.d = start_node.g = start_node.h = start_node.f = start_node.n = 0
     end_node = Node(None, end)
     end_node.d = end_node.g = end_node.h = end_node.f = end_node.n = 0
-
+    print(end_node.position)
     # Initialize both open and closed list
     open_list = []
     closed_list = []
@@ -105,10 +105,12 @@ def astar(image, start, end):
 
             # Make sure within range
             if node_position[0] > (len(image) - 1) or node_position[0] < 0 or node_position[1] > (len(image[len(image)-1]) -1) or node_position[1] < 0:
+                print("beyond range")
                 continue
 
             # Make sure walkable terrain or in closed list
-            if image[node_position[0]][node_position[1]] != 0 or (Node(current_node, node_position) in closed_list):
+            if image[node_position[0]][node_position[1]] != 0:
+                print("not walkable")
                 continue
 
 
@@ -120,10 +122,10 @@ def astar(image, start, end):
             child_num += 1
 
 
-        # if child_num == 0:
-        #     # new_node = Node(current_node, (current_node.position[0]+1, current_node.position[1]))
-        #     # children.append(new_node)
-        #     # print("must cut through line")
+        if child_num == 0:
+            new_node = Node(current_node, (current_node.position[0]+1, current_node.position[1]))
+            children.append(new_node)
+            print("must cut through line")
 
         # Loop through children
         for child in children:
@@ -141,7 +143,7 @@ def astar(image, start, end):
             else:
                 child.n = 10
             child.h = ((child.position[0] - end_node.position[0])**2) + ((child.position[1] - end_node.position[1])**2)
-            #child.d = blocker_dist(child,image)
+            child.d = blocker_dist(child,image)
             # child.n = current_node.n + cost
             #child.g = child.n + child.d
             # child.f = child.g + child.h
@@ -171,20 +173,20 @@ def draw_line(example_img_path, path):
     d = ImageDraw.Draw(im)
 
     for p in path:
-        d.line(p, width=2)
+        d.line(p, width=1)
 
     im.save("P123-Fg001-R-C01-R01.jpeg")
 
 
 def main():
     example_img_path = r"../data/images/P123-Fg001-R-C01-R01-binarized.jpg"
-    image = (255 - cv2.imread(str(example_img_path), cv2.IMREAD_GRAYSCALE)) / 255
+    image = (255 - cv2.imread(str(example_img_path), cv2.IMREAD_GRAYSCALE))/255
     minima = get_sorted_minima(image)
-    # image = (255 - cv2.imread(str(example_img_path), cv2.IMREAD_GRAYSCALE)) / 255
+    image = (255 - cv2.imread(str(example_img_path), cv2.IMREAD_GRAYSCALE))
     all_path=[]
-    for pos in minima[1:2]:
+    for pos in minima[3:4]:
         start = (0, pos)
-        end = (image.shape[1]-1,pos)
+        end = (image.shape[0]-1,pos)
         path = astar(image, start, end)
         print(path)
         all_path.append(path)
