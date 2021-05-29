@@ -39,12 +39,17 @@ def blocker_dist(child,image):
     d_y = []
     for new_pos in [1,-1]:
         i = 1
-        while True:
-            if image[child.position[0],child.position[1]+new_pos*i] == 1 or (i + 1 >= len(image) or i + 1 < 0):
+        y_cord=child.position[1]+new_pos
+        while (y_cord <= image.shape[0]-1) and y_cord >= 0:
+            if image[y_cord,child.position[0]] != 0:
                 d_y.append(i)
                 break
             i += 1
+            y_cord += new_pos
+        if (y_cord > image.shape[0]-1) or y_cord < 0 :
+            d_y.append(i)
 
+    print(d_y)
     D = C/(1+np.min(d_y))
     return D
 
@@ -99,19 +104,18 @@ def astar(image, start, end):
         children = []
         child_num=0
         for new_position in [(0, -1), (0, 1), (-1, 0), (1, 0), (-1, -1), (-1, 1), (1, -1), (1, 1)]: # Adjacent squares
-
           # Get node position
             node_position = (current_node.position[0] + new_position[0], current_node.position[1] + new_position[1])
 
             # Make sure within range
-            if node_position[0] > (len(image) - 1) or node_position[0] < 0 or node_position[1] > (len(image[len(image)-1]) -1) or node_position[1] < 0:
+            if node_position[0] > (image.shape[1] - 1) or node_position[0] < 0 or node_position[1] > (image.shape[0]-1) or node_position[1] < 0:
                 print("beyond range")
                 continue
 
             # Make sure walkable terrain or in closed list
-            if image[node_position[0]][node_position[1]] != 0:
-                print("not walkable")
-                continue
+            # if image[node_position[1],node_position[0]] != 0:
+            #     print("not walkable")
+            #     continue
 
 
             # Create new node
@@ -121,11 +125,11 @@ def astar(image, start, end):
             children.append(new_node)
             child_num += 1
 
-
-        if child_num == 0:
-            new_node = Node(current_node, (current_node.position[0]+1, current_node.position[1]))
-            children.append(new_node)
-            print("must cut through line")
+        # adding all nodes and assigning extra cost for an ink cut later
+        # if child_num == 0:
+        #     new_node = Node(current_node, (current_node.position[0]+1, current_node.position[1]))
+        #     children.append(new_node)
+        #     print("must cut through line")
 
         # Loop through children
         for child in children:
@@ -147,7 +151,9 @@ def astar(image, start, end):
             # child.n = current_node.n + cost
             #child.g = child.n + child.d
             # child.f = child.g + child.h
-            child.g = current_node.g + 1
+            child.g = current_node.g + child.n + child.d
+            if image[child.position[1],child.position[0]] != 0:
+                child.g += 300
             child.f = child.g + child.h
 
             # Child is already in the open list
@@ -183,10 +189,11 @@ def main():
     image = (255 - cv2.imread(str(example_img_path), cv2.IMREAD_GRAYSCALE))/255
     minima = get_sorted_minima(image)
     image = (255 - cv2.imread(str(example_img_path), cv2.IMREAD_GRAYSCALE))
+    image = image[:,:2500]
     all_path=[]
-    for pos in minima[3:4]:
-        start = (0, pos)
-        end = (image.shape[0]-1,pos)
+    for pos in minima[4:5]:
+        start = (2000, pos)
+        end = (image.shape[1]-1,pos)
         path = astar(image, start, end)
         print(path)
         all_path.append(path)
