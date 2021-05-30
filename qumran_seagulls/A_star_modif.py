@@ -7,6 +7,7 @@ from qumran_seagulls.persistence1d import RunPersistence
 
 min_persistence = 150
 C = 250
+avg_height = 100
 
 
 def get_sorted_minima(image):
@@ -30,6 +31,9 @@ class Node:
         self.f = 0
         self.d = 0
         self.n = 0
+        self.m = 0
+        self.v = 0
+        self.d2 =0
 
     def __eq__(self, other):
         return self.position == other.position
@@ -38,8 +42,8 @@ class Node:
 def blocker_dist(child,image):
     d_y = []
     for new_pos in [1,-1]:
-        i = 1
-        y_cord=child.position[1]+new_pos
+        i = 0
+        y_cord=child.position[1]
         while (y_cord <= image.shape[0]-1) and y_cord >= 0:
             if image[y_cord,child.position[0]] != 0:
                 d_y.append(i)
@@ -47,11 +51,12 @@ def blocker_dist(child,image):
             i += 1
             y_cord += new_pos
         if (y_cord > image.shape[0]-1) or y_cord < 0 :
-            d_y.append(i)
+            d_y.append(2709)  #some maximum value
 
     print(d_y)
-    D = C/(1+np.min(d_y))
-    return D
+    D = 1/(1+np.min(d_y))
+    D2 =1/((1+np.min(d_y))**2)
+    return D,D2
 
 
 class ContinueIt(Exception):
@@ -63,10 +68,9 @@ def astar(image, start, end):
 
     # Create start and end node
     start_node = Node(None, start)
-    start_node.d = start_node.g = start_node.h = start_node.f = start_node.n = 0
+    # start_node.d = start_node.g = start_node.h = start_node.f = start_node.n = start_node.m = start_node.v = 0
     end_node = Node(None, end)
-    end_node.d = end_node.g = end_node.h = end_node.f = end_node.n = 0
-    print(end_node.position)
+    # end_node.d = end_node.g = end_node.h = end_node.f = end_node.n = end_node.m = end_node.v = 0
     # Initialize both open and closed list
     open_list = []
     closed_list = []
@@ -112,11 +116,13 @@ def astar(image, start, end):
                 print("beyond range")
                 continue
 
+            # if np.abs(node_position[1] - start_node.position[1])>avg_height:
+            #     continue
+
             # Make sure walkable terrain or in closed list
             # if image[node_position[1],node_position[0]] != 0:
             #     print("not walkable")
             #     continue
-
 
             # Create new node
             new_node = Node(current_node, node_position)
@@ -130,6 +136,7 @@ def astar(image, start, end):
         #     new_node = Node(current_node, (current_node.position[0]+1, current_node.position[1]))
         #     children.append(new_node)
         #     print("must cut through line")
+
 
         # Loop through children
         for child in children:
@@ -147,14 +154,14 @@ def astar(image, start, end):
             else:
                 child.n = 10
             child.h = ((child.position[0] - end_node.position[0])**2) + ((child.position[1] - end_node.position[1])**2)
-            child.d = blocker_dist(child,image)
-            # child.n = current_node.n + cost
+            child.d,child.d2 = blocker_dist(child,image)
+            child.v = np.abs(child.position[1] - start_node.position[1])
             #child.g = child.n + child.d
             # child.f = child.g + child.h
-            child.g = current_node.g + child.n + child.d
             if image[child.position[1],child.position[0]] != 0:
-                child.g += 300
-            child.f = child.g + child.h
+                child.m = 1
+            child.g = current_node.g + child.n + 0*child.d + 0*child.d2 + child.v + 500*child.m
+            child.f = child.g + child.h #heuristic still needed to speed up compustations
 
             # Child is already in the open list
             for open_node in open_list:
@@ -167,7 +174,7 @@ def astar(image, start, end):
                         open_node.f = child.f
                     break
 
-            if moveOn==1:
+            if moveOn == 1:
                 continue
 
             # Add the child to the open list
@@ -192,7 +199,7 @@ def main():
     image = image[:,:2500]
     all_path=[]
     for pos in minima[4:5]:
-        start = (2000, pos)
+        start = (0, pos)
         end = (image.shape[1]-1,pos)
         path = astar(image, start, end)
         print(path)
