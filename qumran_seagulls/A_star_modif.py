@@ -1,6 +1,7 @@
 # from persistence1d import RunPersistence
 import cv2
 import numpy as np
+import matplotlib.pyplot as plt
 from PIL import Image, ImageDraw
 
 from qumran_seagulls.persistence1d import RunPersistence
@@ -191,20 +192,31 @@ def draw_line(example_img_path, path):
     im.save("P123-Fg001-R-C01-R01.jpeg")
 
 
+def plot_lines(image, paths):
+    plt.imshow(image)
+
+    for path in paths:
+        plt.plot(*zip(*path))
+
+    plt.show()
+
+
 def main():
     example_img_path = r"../data/images/P123-Fg001-R-C01-R01-binarized.jpg"
     image = (255 - cv2.imread(str(example_img_path), cv2.IMREAD_GRAYSCALE))/255
     minima = get_sorted_minima(image)
     image = (255 - cv2.imread(str(example_img_path), cv2.IMREAD_GRAYSCALE))
-    image = image[:,:2500]
-    all_path=[]
+    # image = image[:, :2500]
+    h, w = np.shape(image)
+    all_path = []
     for pos in minima[4:5]:
         start = (0, pos)
-        end = (image.shape[1]-1,pos)
+        end = (w - 1, pos)
         path = astar(image, start, end)
         print(path)
         all_path.append(path)
-    draw_line(example_img_path,all_path)
+    draw_line(example_img_path, all_path)
+    plot_lines(image, all_path)
 
 
 if __name__ == '__main__':
