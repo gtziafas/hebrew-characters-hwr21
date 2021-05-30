@@ -26,7 +26,7 @@ def plot_sliding_window(img: np.ndarray, cnn: BaselineCNN, step_size: int = 10):
         predictions[0, int(window_right_edge / step_size)] = window_right_edge  # window position, this is the x position needed for the plot
 
         window = img[0:h, window_right_edge - h:window_right_edge]  # crop the window
-        y = cnn.predict_scores(imgs=[window], device='cpu')
+        y = cnn.predict_scores(imgs=[window], device='cpu').softmax(dim=-1)
         print(y)
         predictions[1:, int(window_right_edge / step_size)] = y.detach()
 
