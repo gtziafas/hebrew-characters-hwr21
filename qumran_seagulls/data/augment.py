@@ -12,6 +12,8 @@ class Augmenter:
         self.path_habbakuk_font = 'dump/'
         self.path_monkbril = '/home/niels/Documents/UNI/Master/Hand Writing Recognition/hebrew-characters-hwr21/data/monkbrill'
         self.images = self.load_images()
+        self.available_augmentations = ['erode', 'dilate', 'elastic', 'perspective', 'affine', 'elastic_perspective',
+                                        'dilate_elastic', 'erode_elastic', 'dilate_affine', 'erode_affine']
         # imgaug augmentations:
         self.elastic_transform = iaa.ElasticTransformation(alpha=(5, 30), sigma=(3, 7))
         self.perspective_transform = iaa.PerspectiveTransform(scale=(0.05, 0.10))
@@ -46,8 +48,6 @@ class Augmenter:
         kernel_size = np.random.randint(low, high)
         kernel = (kernel_size, kernel_size)
         augmented = cv2.erode(image, kernel, iterations=1)
-        # revert inversion
-        augmented = cv2.bitwise_not(augmented)
         return augmented
 
     '''
@@ -60,8 +60,6 @@ class Augmenter:
         kernel_size = np.random.randint(low, high)
         kernel = (kernel_size, kernel_size)
         augmented = cv2.dilate(image, kernel, iterations=1)
-        # revert inversion
-        augmented = cv2.bitwise_not(augmented)
         return augmented
 
     ''''
@@ -70,8 +68,6 @@ class Augmenter:
 
     def elastic(self, image):
         augmented = self.elastic_transform(images=image)
-        # revert inversion
-        augmented = cv2.bitwise_not(augmented)
         return augmented
 
     ''''
@@ -80,8 +76,6 @@ class Augmenter:
 
     def perspective(self, image):
         augmented = self.perspective_transform(images=image)
-        # revert inversion
-        augmented = cv2.bitwise_not(augmented)
         return augmented
 
     ''''
@@ -91,14 +85,59 @@ class Augmenter:
 
     def affine(self, image):
         augmented = self.affine_transform(images=image)
-        # revert inversion
-        augmented = cv2.bitwise_not(augmented)
+        return augmented
+
+    '''
+    Perform elastic transform followed by perspective transform
+    '''
+
+    def elastic_perspective(self, image):
+        augmented = self.elastic(image)
+        augmented = self.perspective(augmented)
+        return augmented
+
+    '''
+    Perform dilation followed by elastic transform
+    '''
+
+    def dilate_elastic(self, image):
+        augmented = self.dilate(image)
+        augmented = self.elastic(augmented)
+        return augmented
+
+    '''
+    Perform erosion followed by elastic transform
+    '''
+
+    def erode_elastic(self, image):
+        augmented = self.erode(image)
+        augmented = self.elastic(augmented)
+        return augmented
+
+    '''
+    Perform dilation followed by affine transform
+    '''
+
+    def dilate_affine(self, image):
+        augmented = self.dilate(image)
+        augmented = self.affine(augmented)
+        return augmented
+
+    '''
+    Perform erosion followed by affine transform
+    '''
+
+    def erode_affine(self, image):
+        augmented = self.erode(image)
+        augmented = self.affine(augmented)
         return augmented
 
     '''
     Heavy augmentation: create a total of 300 different samples (including monkbrill samples)
     '''
 
+    '''NOTE: dont forget to rezise and invert images back at the end
+    '''
     def augment(self):
 
         pass
