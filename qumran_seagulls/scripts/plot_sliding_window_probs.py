@@ -7,6 +7,7 @@ from qumran_seagulls.models.cnn import BaselineCNN, default_cnn_monkbrill
 CNN_PATH = "../../data/saved_models/baseline.pt"
 N_CLASSES = 27  # I think? Why is it so hard to get the size of the output without running the CNN
 input_dim = (75, 75)  # same
+show_max = True  # show only the max prob in each point
 
 
 def get_roi(window) -> np.ndarray:
@@ -37,10 +38,14 @@ def plot_sliding_window(img: np.ndarray, cnn: BaselineCNN, step_size: int = 10):
     print(f"predictions matrix:\n{predictions}")
 
     plt.imshow(img)
-    for cls in range(N_CLASSES):
-        plt.plot(predictions[0] - h / 2, h * 2 - h * predictions[cls + 1])
-        # x pos: right edge of window - half the height (since window is square) will give the center of the window
-        # y pos: imshow flips axes so there is a minus in front of the predictions, scale it up by h and move it below the image
+    if show_max:
+        max_probs = np.max(predictions[1:, :], axis=0)
+        plt.plot(predictions[0] - h / 2, h * 2 - h * max_probs)
+    else:
+        for cls in range(N_CLASSES):
+            plt.plot(predictions[0] - h / 2, h * 2 - h * predictions[cls + 1])
+            # x pos: right edge of window - half the height (since window is square) will give the center of the window
+            # y pos: imshow flips axes so there is a minus in front of the predictions, scale it up by h and move it below the image
     plt.ylim(ymin=0, ymax=2 * h)
     plt.yticks([0, h, 2 * h])
     plt.gca().invert_yaxis()
