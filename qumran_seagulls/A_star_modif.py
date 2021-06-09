@@ -1,23 +1,27 @@
-# from persistence1d import RunPersistence
+# Add data/extracted_images folder
+import sys
+
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image, ImageDraw
+import os
 
-from qumran_seagulls.persistence1d import RunPersistence
+from persistence1d import RunPersistence
 
-min_persistence = 150
-C = 250
-avg_height = 100
+min_persistence = 170
 
 
-def get_sorted_minima(image: np.array) -> list[int]:
+def get_sorted_minima(image: np.array):
     histogram = np.sum(image, axis=1)
     extrema = RunPersistence(histogram)
     minima = extrema[0::2]  # odd elements are minima
     filtered_minima = [t[0] for t in minima if t[1] > min_persistence]
     sorted_minima = sorted(filtered_minima)
     return sorted_minima
+
+class ContinueIt(Exception):
+    pass
 
 
 class Node:
@@ -40,38 +44,32 @@ class Node:
         return self.position == other.position
 
 
-def blocker_dist(child, image):
-    d_y = []
-    for new_pos in [1, -1]:
-        i = 0
-        y_cord = child.position[1]
-        while (y_cord <= image.shape[0]-1) and y_cord >= 0:
-            if image[y_cord, child.position[0]] != 0:
-                d_y.append(i)
-                break
-            i += 1
-            y_cord += new_pos
-        if (y_cord > image.shape[0]-1) or y_cord < 0:
-            d_y.append(2709)  # some maximum value
-
-    print(d_y)
-    D = 1 / (1+np.min(d_y))
-    D2 = 1 / ((1+np.min(d_y))**2)
-    return D, D2
-
-
-class ContinueIt(Exception):
-    pass
+# def blocker_dist(child, image):
+#     d_y = []
+#     for new_pos in [1, -1]:
+#         i = 0
+#         y_cord = child.position[1]
+#         while (y_cord <= image.shape[0]-1) and y_cord >= 0:
+#             if image[y_cord, child.position[0]] != 0:
+#                 d_y.append(i)
+#                 break
+#             i += 1
+#             y_cord += new_pos
+#         if (y_cord > image.shape[0]-1) or y_cord < 0:
+#             d_y.append(2709)  # some maximum value
+#
+#     print(d_y)
+#     D = 1 / (1+np.min(d_y))
+#     D2 = 1 / ((1+np.min(d_y))**2)
+#     return D, D2
 
 
-def astar(image, start, end):
+def astar(image, start, end, avg_dist):
     """Returns a list of tuples as a path from the given start to the given end in the given maze"""
 
     # Create start and end node
     start_node = Node(None, start)
-    # start_node.d = start_node.g = start_node.h = start_node.f = start_node.n = start_node.m = start_node.v = 0
     end_node = Node(None, end)
-    # end_node.d = end_node.g = end_node.h = end_node.f = end_node.n = end_node.m = end_node.v = 0
     # Initialize both open and closed list
     open_list = []
     closed_list = []
@@ -93,11 +91,9 @@ def astar(image, start, end):
         # Pop current off open list, add to closed list
         open_list.pop(current_index)
         closed_list.append(current_node)
-        print("closed: ", current_node.position)
 
         # Found the goal
         if current_node == end_node:
-            print("same")
             path = []
             current = current_node
             while current is not None:
@@ -108,22 +104,26 @@ def astar(image, start, end):
         # Generate children
         children = []
         child_num = 0
-        for new_position in [(0, -1), (0, 1), (-1, 0), (1, 0), (-1, -1), (-1, 1), (1, -1), (1, 1)]: # Adjacent squares
+        for new_position in [(0, -1), (0, 1), (1, 0), (-1, 0), (-1, -1), (-1, 1), (1, -1), (1, 1)]: # Adjacent squares
             # Get node position
             node_position = (current_node.position[0] + new_position[0], current_node.position[1] + new_position[1])
 
             # Make sure within range
-            if node_position[0] > (image.shape[1] - 1) or node_position[0] < 0 or node_position[1] > (image.shape[0]-1) or node_position[1] < 0:
+            if node_position[0] > (image.shape[1] - 1) or node_position[0] < start_node.position[0] or node_position[
+                1] > (image.shape[0] - 1) or node_position[1] < 0:
                 print("beyond range")
                 continue
 
-            # if np.abs(node_position[1] - start_node.position[1])>avg_height:
-            #     continue
+            #if the path search moves too low, abondon it
+            if node_position[1] > start_node.position[1] + avg_dist/2:
+                continue
 
-            # Make sure walkable terrain or in closed list
-            # if image[node_position[1],node_position[0]] != 0:
-            #     print("not walkable")
-            #     continue
+
+            # Make sure walkable terrain or in closed list, may not cut through unless the search path has moved into the next line
+            if image[node_position[1],node_position[0]] != 0:
+                if node_position[1] > start_node.position[1] - avg_dist/2:
+                    print("not walkable")
+                    continue
 
             # Create new node
             new_node = Node(current_node, node_position)
@@ -133,16 +133,16 @@ def astar(image, start, end):
             child_num += 1
 
         # adding all nodes and assigning extra cost for an ink cut later
-        # if child_num == 0:
-        #     new_node = Node(current_node, (current_node.position[0]+1, current_node.position[1]))
-        #     children.append(new_node)
-        #     print("must cut through line")
+        if child_num == 0:
+            new_node = Node(current_node, (current_node.position[0]+1, current_node.position[1]))
+            children.append(new_node)
+            print("must cut through line")
 
         # Loop through children
         for child in children:
             move_on = 0
             # Child is on the closed list
-            for closed_child in closed_list:   # can be removed since checked in line 99
+            for closed_child in closed_list:
                 if child == closed_child:
                     move_on = 1
                     break
@@ -153,15 +153,14 @@ def astar(image, start, end):
                 child.n = 14
             else:
                 child.n = 10
-            child.h = ((child.position[0] - end_node.position[0])**2) + ((child.position[1] - end_node.position[1])**2)
-            child.d, child.d2 = blocker_dist(child, image)
-            child.v = np.abs(child.position[1] - start_node.position[1])
-            #child.g = child.n + child.d
-            # child.f = child.g + child.h
+            child.h = (np.abs(child.position[0] - end_node.position[0])**2) + (np.abs(child.position[1] - end_node.position[1])**2)
+            child.v = np.abs(child.position[1] - start_node.position[1]) #cost for vertical movement
+
             if image[child.position[1], child.position[0]] != 0:
-                child.m = 1
-            child.g = current_node.g + child.n + 0*child.d + 0*child.d2 + child.v + 500*child.m
-            child.f = child.g + child.h  # heuristic still needed to speed up compustations
+                child.m = 25
+            child.g = current_node.g + child.n + child.v + child.m
+            child.f = child.g + child.h  # heuristic still needed to speed up computations
+
 
             # Child is already in the open list
             for open_node in open_list:
@@ -188,7 +187,8 @@ def draw_line(example_img_path, path):
     for p in path:
         d.line(p, width=1)
 
-    im.save("P123-Fg001-R-C01-R01.jpeg")
+    save_filename = r"../data/extracted_images/" + os.path.split(example_img_path)[1]
+    im.save(save_filename)
 
 
 def plot_lines(image, paths):
@@ -200,7 +200,7 @@ def plot_lines(image, paths):
     plt.show()
 
 
-def crop_lines(image: np.ndarray, paths: list[list[tuple[int]]]):
+def crop_lines(image: np.ndarray, paths, example_img_path):
     """
     Crops all the lines from the image, given the paths between them
     Based on: https://stackoverflow.com/questions/48301186/cropping-concave-polygon-from-image-using-opencv-python
@@ -233,7 +233,10 @@ def crop_lines(image: np.ndarray, paths: list[list[tuple[int]]]):
 
         np.set_printoptions(edgeitems=30, linewidth=100000,
                             formatter=dict(float=lambda x: "%.3d" % x))
-        plt.imshow(dst/255)
+        dst = 255-dst
+        plt.imshow(dst)
+        filename = r"../data/extracted_images/" + "line" + str(i) + "_" + os.path.split(example_img_path)[1]
+        cv2.imwrite(filename, dst)
         plt.show()
         cropped_lines.append(dst)
 
@@ -242,29 +245,35 @@ def crop_lines(image: np.ndarray, paths: list[list[tuple[int]]]):
 
 def segment_img(image):
     h, w = np.shape(image)
-    minima = get_sorted_minima(image)
+    minima = [0, 299, 488, 649, 813, 968, 1108, 1236, 1424, 1560, 1752, 1905, 2096]
     all_paths = []
-    for pos in minima[:5]:
-        start = (0, pos)
-        end = (w - 1, pos)
-        path = astar(image, start, end)
+    path = []
+    #adding extra line in path
+    for i in range(image.shape[1]):
+        path.append(tuple([i, 1]))
+    all_paths.append(path)
+    for pos in range(1,len(minima)):
+        start = (0, minima[pos])
+        end = (w - 1, minima[pos])
+        avg_dist = (minima[pos] - minima[pos-1])/2
+        path = astar(image, start, end, avg_dist)
         print(path)
         all_paths.append(path)
     return all_paths
 
 
-def main():
-    example_img_path = r"../data/images/P123-Fg001-R-C01-R01-binarized.jpg"
+def main(argv):
+    print(argv)
+    example_img_path = argv
     example_img = (255 - cv2.imread(str(example_img_path), cv2.IMREAD_GRAYSCALE))/255
     paths = segment_img(example_img)
-
     draw_line(example_img_path, paths)
     plot_lines(example_img, paths)
-    crop_lines(example_img * 255, paths)
+    crop_lines(example_img * 255, paths, example_img_path)
 
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv[1])
 
 
 
