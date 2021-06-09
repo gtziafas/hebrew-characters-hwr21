@@ -3,6 +3,7 @@ import imgaug as ia
 import imgaug.augmenters as iaa
 import cv2
 import glob
+import itertools
 import numpy as np
 from PIL import Image
 
@@ -12,14 +13,15 @@ class Augmenter:
         self.path_habbakuk_font = 'dump/'
         self.path_monkbril = '/home/niels/Documents/UNI/Master/Hand Writing Recognition/hebrew-characters-hwr21/data/monkbrill'
         self.images = self.load_images()
-        self.available_augmentations = ['erode', 'dilate', 'elastic', 'perspective', 'affine', 'elastic_perspective',
-                                        'dilate_elastic', 'erode_elastic', 'dilate_affine', 'erode_affine']
+        # we want 300 samples per class
+        self.samples_per_class = 300
         # imgaug augmentations:
         self.elastic_transform = iaa.ElasticTransformation(alpha=(5, 30), sigma=(3, 7))
         self.perspective_transform = iaa.PerspectiveTransform(scale=(0.05, 0.10))
         self.affine_transform = iaa.Affine(translate_percent={"x": (-0.2, 0.2), "y": (-0.2, 0.2)}, scale=(0.5, 1.5))
         # cv2 augmentations:
-        self.kernel_range_dilate_erode = (0, 0)
+        self.kernel_range_dilate_dilate = (5, 10)
+        self.kernel_range_dilate_erode = (4, 6)
 
     '''
     Load a list containing tuples: (name, image, amount of samples in Monkbrill)
@@ -46,8 +48,8 @@ class Augmenter:
         low, high = self.kernel_range_dilate_erode
         # draw random kernel from kernel range
         kernel_size = np.random.randint(low, high)
-        kernel = (kernel_size, kernel_size)
-        augmented = cv2.erode(image, kernel, iterations=1)
+        kernel = np.ones((kernel_size, kernel_size), np.uint8)
+        augmented = cv2.erode(image, kernel, iterations=2)
         return augmented
 
     '''
@@ -55,10 +57,10 @@ class Augmenter:
     '''
 
     def dilate(self, image):
-        low, high = self.kernel_range_dilate_erode
+        low, high = self.kernel_range_dilate_dilate
         # draw random kernel from kernel range
         kernel_size = np.random.randint(low, high)
-        kernel = (kernel_size, kernel_size)
+        kernel = np.ones((kernel_size, kernel_size), np.uint8)
         augmented = cv2.dilate(image, kernel, iterations=1)
         return augmented
 
@@ -67,7 +69,7 @@ class Augmenter:
     '''
 
     def elastic(self, image):
-        augmented = self.elastic_transform(images=image)
+        augmented = self.elastic_transform(image=image)
         return augmented
 
     ''''
@@ -75,7 +77,7 @@ class Augmenter:
     '''
 
     def perspective(self, image):
-        augmented = self.perspective_transform(images=image)
+        augmented = self.perspective_transform(image=image)
         return augmented
 
     ''''
@@ -84,7 +86,7 @@ class Augmenter:
     '''
 
     def affine(self, image):
-        augmented = self.affine_transform(images=image)
+        augmented = self.affine_transform(image=image)
         return augmented
 
     '''
@@ -136,16 +138,43 @@ class Augmenter:
     Heavy augmentation: create a total of 300 different samples (including monkbrill samples)
     '''
 
-    '''NOTE: dont forget to rezise and invert images back at the end
+    '''NOTE: dont forget to resize and invert images back at the end3
     '''
-    def augment(self):
 
-        pass
+    def augment(self):
+        images = []
+        augmentations = [self.erode, self.dilate, self.affine, self.elastic, self.perspective, self.erode_affine,
+               self.dilate_affine, self.erode_elastic, self.dilate_elastic]
+
+        for item in self.images:
+            image, name, samples = item
+            cnt = 1
+            cycle = 1
+            for augmentation in itertools.cycle(augmentations):
+                augmented = augmentation(image=image)
+                augmented = cv2.resize(augmented, (70, 70))
+                augmented = cv2.bitwise_not(augmented)
+                aug_name = str(augmentation.__name__).replace('self.', '')
+
+                if not os.path.exists(f'augmented/{name}'):
+                    os.mkdir(f'augmented/{name}')
+                cv2.imwrite(f'augmented/{name}/{name}_{aug_name}_{cycle}.png', augmented)
+                images.append(augmented)
+
+                if cnt == len(augmentations):
+                    cnt = 1
+                    cycle += 1
+                cnt += 1
+                if cycle == 10:
+                    break
+
+        print("All samples generated successfully")
+        return images
 
 
 def main():
     A = Augmenter()
-    print(A.images[0][2])
+    A.augment()
 
 
 if __name__ == '__main__':
