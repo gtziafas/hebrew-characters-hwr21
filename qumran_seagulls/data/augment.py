@@ -10,9 +10,11 @@ from PIL import Image
 
 class Augmenter:
     def __init__(self):
+        self.samples = []
         self.path_habbakuk_font = 'dump/'
         self.path_monkbril = '/home/niels/Documents/UNI/Master/Hand Writing Recognition/hebrew-characters-hwr21/data/monkbrill'
-        self.images = self.load_images()
+        self.images = self.load_habbakuk()
+        self.clear = lambda: os.system('clear')
         # we want 300 samples per class
         self.samples_per_class = 300
         # imgaug augmentations:
@@ -27,7 +29,7 @@ class Augmenter:
     Load a list containing tuples: (name, image, amount of samples in Monkbrill)
     '''
 
-    def load_images(self):
+    def load_habbakuk(self):
         ia.seed(1)
         image_list = []
         for filename in glob.glob(self.path_habbakuk_font + '/*.png'):
@@ -39,6 +41,15 @@ class Augmenter:
             samples = len([item for item in os.listdir(self.path_monkbril + '/' + filename)])
             image_list.append((im, filename, samples))
         return image_list
+
+    def load_monkbrill(self):
+
+        for subdir, dirs, files in os.walk(self.path_monkbril):
+            for file in files:
+                im = Image.open(os.path.join(subdir, file))
+                im = np.array(im, dtype=np.uint8)
+                im = cv2.resize(im, (70, 70))
+                self.samples.append(im)
 
     '''
     Erode 1 image with a random kernel drawn from the kernel range
@@ -135,16 +146,21 @@ class Augmenter:
         return augmented
 
     '''
-    Heavy augmentation: create a total of 300 different samples (including monkbrill samples)
-    '''
-
-    '''NOTE: dont forget to resize and invert images back at the end3
+    Create a total of 300 different samples (including monkbrill samples)
+    self.samples will contain all monkbrill samples and all augmenten samples (300 per class)
+    
+    Atm I also write all generated samples to a augmented/ The amount of samples will differ
+    depending on the amount of samples that are already available from monkbrill 
     '''
 
     def augment(self):
-        images = []
+
         augmentations = [self.erode, self.dilate, self.affine, self.elastic, self.perspective, self.erode_affine,
-               self.dilate_affine, self.erode_elastic, self.dilate_elastic]
+                         self.dilate_affine, self.erode_elastic, self.dilate_elastic]
+        self.load_monkbrill()
+
+        if not os.path.exists(f'augmented/'):
+            os.mkdir(f'augmented/')
 
         for item in self.images:
             image, name, samples = item
@@ -159,17 +175,23 @@ class Augmenter:
                 if not os.path.exists(f'augmented/{name}'):
                     os.mkdir(f'augmented/{name}')
                 cv2.imwrite(f'augmented/{name}/{name}_{aug_name}_{cycle}.png', augmented)
-                images.append(augmented)
+                self.samples.append(augmented)
+
+                samples += 1
+                print(f'samples: {samples}, name: {name}')
+                self.clear()
 
                 if cnt == len(augmentations):
                     cnt = 1
                     cycle += 1
-                cnt += 1
-                if cycle == 10:
+                if samples >= self.samples_per_class:
                     break
 
+                cnt += 1
+
+
         print("All samples generated successfully")
-        return images
+        return self.samples
 
 
 def main():
