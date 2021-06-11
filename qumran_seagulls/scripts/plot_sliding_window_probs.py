@@ -64,7 +64,6 @@ def plot_sliding_window(img: np.ndarray, cnn: BaselineCNN, step_size: int = 10):
     plt.ylim(ymin=0, ymax=2 * h)
     plt.yticks([0, h, 2 * h])
     plt.gca().invert_yaxis()
-    plt.show()
 
 
 def main():
@@ -75,8 +74,14 @@ def main():
     saved_cnn.load_state_dict(torch.load(CNN_PATH))
 
     print(example_img)
-    plot_sliding_window(example_img, saved_cnn, step_size=10)
+    for i in range(1, 14):
+        plt.figure(i)
+        example_img = 0xff - cv2.imread(str(f"data/lines_cropped/P106-Fg002-R-C01-R01/line_{i}.jpg"), cv2.IMREAD_GRAYSCALE)
+        plot_sliding_window(example_img, saved_cnn, step_size=10)
+    plt.show()
 
 
 if __name__ == "__main__":
     main()
+
+# to run use command python3 -m qumran_seagulls.scripts.plot_sliding_window_probs
