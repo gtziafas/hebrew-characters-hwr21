@@ -284,10 +284,12 @@ def main(argv):
         plot_lines(example_img, paths)
     cropped_lines = crop_lines(example_img, paths)
 
-    if not os.path.exists('../data/extracted_images/'):
-        os.mkdir('../data/extracted_images/')
+    cropped_lines_dir_path = os.path.splitext('../data/extracted_images/' + os.path.split(example_img_path)[1])[0].replace('-binarized','')
+
+    if not os.path.exists(cropped_lines_dir_path):
+        os.makedirs(cropped_lines_dir_path, exist_ok=True)
     for idx, cropped_line in enumerate(cropped_lines):
-        filename = r"../data/extracted_images/" + "line" + str(idx) + "_" + os.path.split(example_img_path)[1]
+        filename = cropped_lines_dir_path + "/line_" + str(idx) + ".jpg"
         cv2.imwrite(filename, 255-cropped_line)
 
 
