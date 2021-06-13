@@ -1,8 +1,10 @@
 #Uses pillow (you can also use another imaging library if you want)
+import os
+
 from PIL import Image, ImageFont, ImageDraw
 
 #Load the font and set the font size to 42
-font = ImageFont.truetype('/home/niels/Documents/UNI/Master/Hand Writing Recognition/hebrew-characters-hwr21/data/habbakuk/Habbakuk.TTF', 42)
+font = ImageFont.truetype('../../data/habbakuk/Habbakuk.TTF', 42)
 
 
 #Character mapping for each of the 27 tokens
@@ -53,4 +55,7 @@ def create_image(label, img_size):
 #To get the raw data cast it to a numpy array
 for c in list(char_map.keys()):
     img = create_image(c, (50, 50))
+
+    if not os.path.exists('./dump/'):
+        os.mkdir('./dump/')
     img.save(f'./dump/example2_{c}.png')

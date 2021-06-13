@@ -2,7 +2,7 @@ import os
 import matplotlib.pyplot as plt
 from matplotlib.cm import ScalarMappable
 
-path = '/home/niels/Documents/UNI/Master/Hand Writing Recognition/hebrew-characters-hwr21/data/monkbrill'
+path = '../../data/monkbrill'
 
 data = []
 dirs = os.listdir(path)
