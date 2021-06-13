@@ -1,4 +1,4 @@
-from .unionfind import UnionFind
+from unionfind import UnionFind
 import numpy as np
 
 
