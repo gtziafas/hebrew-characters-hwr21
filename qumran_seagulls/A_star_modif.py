@@ -10,18 +10,16 @@ import os
 from persistence1d import RunPersistence
 
 min_persistence = 170
+debug = True
 
 
-def get_sorted_minima(image: np.array):
+def get_sorted_minima(image: np.array) -> list[int]:
     histogram = np.sum(image, axis=1)
     extrema = RunPersistence(histogram)
     minima = extrema[0::2]  # odd elements are minima
     filtered_minima = [t[0] for t in minima if t[1] > min_persistence]
     sorted_minima = sorted(filtered_minima)
     return sorted_minima
-
-class ContinueIt(Exception):
-    pass
 
 
 class Node:
@@ -187,6 +185,8 @@ def draw_line(example_img_path, path):
     for p in path:
         d.line(p, width=1)
 
+    if not os.path.exists('../data/extracted_images/'):
+        os.mkdir('../data/extracted_images/')
     save_filename = r"../data/extracted_images/" + os.path.split(example_img_path)[1]
     im.save(save_filename)
 
@@ -200,14 +200,16 @@ def plot_lines(image, paths):
     plt.show()
 
 
-def crop_lines(image: np.ndarray, paths, example_img_path):
+def crop_lines(image: np.ndarray, paths: list[list[tuple[int]]]):
     """
     Crops all the lines from the image, given the paths between them
     Based on: https://stackoverflow.com/questions/48301186/cropping-concave-polygon-from-image-using-opencv-python
-    :param image:
-    :param paths:
+    :param image: image to be cropped
+    :param paths: list of paths, each path being a list of 2d coordinates
     :return:
     """
+
+    normalized_img = image * 255
 
     cropped_lines = []
     l = len(paths)
@@ -220,7 +222,7 @@ def crop_lines(image: np.ndarray, paths, example_img_path):
         # (1) Crop the bounding rect
         rect = cv2.boundingRect(polygon)
         x, y, w, h = rect
-        cropped = image[y:y + h, x:x + w].copy()
+        cropped = normalized_img[y:y + h, x:x + w].copy()
 
         # (2) make mask
         polygon = polygon - polygon.min(axis=0)
@@ -233,11 +235,9 @@ def crop_lines(image: np.ndarray, paths, example_img_path):
 
         np.set_printoptions(edgeitems=30, linewidth=100000,
                             formatter=dict(float=lambda x: "%.3d" % x))
-        dst = 255-dst
-        plt.imshow(dst)
-        filename = r"../data/extracted_images/" + "line" + str(i) + "_" + os.path.split(example_img_path)[1]
-        cv2.imwrite(filename, dst)
-        plt.show()
+        if debug:
+            plt.imshow(dst/255)
+            plt.show()
         cropped_lines.append(dst)
 
     return cropped_lines
@@ -267,9 +267,16 @@ def main(argv):
     example_img_path = argv
     example_img = (255 - cv2.imread(str(example_img_path), cv2.IMREAD_GRAYSCALE))/255
     paths = segment_img(example_img)
-    draw_line(example_img_path, paths)
-    plot_lines(example_img, paths)
-    crop_lines(example_img * 255, paths, example_img_path)
+    if debug:
+        draw_line(example_img_path, paths)
+        plot_lines(example_img, paths)
+    cropped_lines = crop_lines(example_img, paths)
+
+    if not os.path.exists('../data/extracted_images/'):
+        os.mkdir('../data/extracted_images/')
+    for idx, cropped_line in enumerate(cropped_lines):
+        filename = r"../data/extracted_images/" + "line" + str(idx) + "_" + os.path.split(example_img_path)[1]
+        cv2.imwrite(filename, 255-cropped_line)
 
 
 if __name__ == '__main__':
