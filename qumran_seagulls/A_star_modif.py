@@ -251,7 +251,7 @@ def crop_lines(image: np.ndarray, paths: list[list[tuple[int]]]):
 
 def segment_img(image):
     h, w = np.shape(image)
-    minima = [0, 299, 488, 649, 813, 968, 1108, 1236, 1424, 1560, 1752, 1905, 2096]
+    minima = get_sorted_minima(image)
     all_paths = []
     path = []
 
