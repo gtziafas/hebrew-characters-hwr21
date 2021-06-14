@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image, ImageDraw
 from tqdm import tqdm  # progress bar
+from .types import *
 import os
 
 from persistence1d import RunPersistence
@@ -14,7 +15,7 @@ min_persistence = 170
 debug = False
 
 
-def get_sorted_minima(image: np.array) -> list[int]:
+def get_sorted_minima(image: np.array) -> List[int]:
     histogram = np.sum(image, axis=1)
     extrema = RunPersistence(histogram)
     minima = extrema[0::2]  # odd elements are minima
@@ -206,7 +207,7 @@ def plot_lines(image, paths):
     plt.show()
 
 
-def crop_lines(image: np.ndarray, paths: list[list[tuple[int]]]):
+def crop_lines(image: np.ndarray, paths: List[List[Tuple[int]]]):
     """
     Crops all the lines from the image, given the paths between them
     Based on: https://stackoverflow.com/questions/48301186/cropping-concave-polygon-from-image-using-opencv-python
