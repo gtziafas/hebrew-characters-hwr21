@@ -107,12 +107,12 @@ def main():
         example_img = 0xff - cv2.imread(str(f"../../data/lines_cropped/{file_id}/line_{i}.jpg"), cv2.IMREAD_GRAYSCALE)
         char_imgs = plot_sliding_window(example_img, saved_cnn, step_size=10)
         for idx, char_img in enumerate(char_imgs):
-            print(f"line: {i} char: {idx} shape{char_img.shape}")
-            plt.imshow(char_img)
+            print(f"line: {i} char: {idx} shape: {char_img.shape}")
             dest_dir = f"../../data/chars_cropped/{file_id}/line_{i:02}/"
             os.makedirs(dest_dir, exist_ok=True)
             plt.imsave(dest_dir + f"char_{idx:03}.jpg", char_img)
-            plt.show()
+            # plt.imshow(char_img)
+            # plt.show()
     plt.show()
 
 
