@@ -5,11 +5,11 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 from typing import List
-from qumran_seagulls.models.cnn import BaselineCNN, default_cnn_monkbrill
+from qumran_seagulls.models.cnn import BaselineCNN, monkbrill_with_between_class
 from qumran_seagulls.persistence1d import RunPersistence
 
-CNN_PATH = "../../data/saved_models/baseline.pt"
-N_CLASSES = 27  # I think? Why is it so hard to get the size of the output without running the CNN
+CNN_PATH = "../../data/saved_models/segmenter.pt"
+N_CLASSES = 28  # I think? Why is it so hard to get the size of the output without running the CNN
 input_dim = (75, 75)  # same
 show_max = True  # show only the max prob in each point
 min_persistence = 0.4
@@ -56,6 +56,7 @@ def plot_sliding_window(line_img: np.ndarray, cnn: BaselineCNN, step_size: int =
     h, w = np.shape(line_img)
     predictions = get_sliding_window_probs(line_img, cnn, step_size)
 
+    print(np.shape(predictions[1:28, :]))  # discard probability that we are in-between characters
     max_probs = np.max(predictions[1:, :], axis=0)
     # print("line")
 
@@ -99,13 +100,13 @@ def plot_sliding_window(line_img: np.ndarray, cnn: BaselineCNN, step_size: int =
 def main():
 
     file_id = "P106-Fg002-R-C01-R01"
-    saved_cnn = default_cnn_monkbrill()
+    saved_cnn = monkbrill_with_between_class()
     saved_cnn.load_state_dict(torch.load(CNN_PATH))
 
     for i in range(1, 14):
         plt.figure(i)
         example_img = 0xff - cv2.imread(str(f"../../data/lines_cropped/{file_id}/line_{i}.jpg"), cv2.IMREAD_GRAYSCALE)
-        char_imgs = plot_sliding_window(example_img, saved_cnn, step_size=10)
+        char_imgs = plot_sliding_window(example_img, saved_cnn, step_size=15)
         for idx, char_img in enumerate(char_imgs):
             print(f"line: {i} char: {idx} shape: {char_img.shape}")
             dest_dir = f"../../data/chars_cropped/{file_id}/line_{i:02}/"
