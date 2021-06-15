@@ -27,8 +27,8 @@ def pad_white_centered(img, target_h):
 
 
 def make_between_img(im1: np.ndarray, im2: np.ndarray):
-    h1, w1 = np.shape(im1)  # assuming both images have same size
-    h2, w2 = np.shape(im2)  # assuming both images have same size
+    h1, w1 = np.shape(im1)
+    h2, w2 = np.shape(im2)
 
     right_im1 = im1[:, int(w1/2):] # right half of im1
     left_im2 = im2[:, :int(w2/2)] # left half of im2
