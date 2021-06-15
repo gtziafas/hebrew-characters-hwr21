@@ -1,5 +1,6 @@
 import random
 
+import matplotlib.pyplot as plt
 import numpy as np
 
 from ..types import *
@@ -29,14 +30,16 @@ def make_between_img(im1: np.ndarray, im2: np.ndarray):
     h1, w1 = np.shape(im1)  # assuming both images have same size
     h2, w2 = np.shape(im2)  # assuming both images have same size
 
-    right_im1 = im1[:, :int(w1/2)]
-    left_im2 = im2[:, int(w2/2):]
-
+    right_im1 = im1[:, int(w1/2):] # right half of im1
+    left_im2 = im2[:, :int(w2/2)] # left half of im2
 
     if h1 > h2:
         left_im2 = pad_white_centered(left_im2, h1)
     elif h2 > h1:
         right_im1 = pad_white_centered(right_im1, h2)
+
+    plt.imshow(np.hstack([right_im1, left_im2]))
+    plt.show()
 
     return np.hstack([right_im1, left_im2])
 
