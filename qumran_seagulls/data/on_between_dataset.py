@@ -17,10 +17,10 @@ def pad_white_centered(img, target_h):
     :return: padded image
     """
     h, w = np.shape(img)
-    top_padding = np.ones((int((target_h - h) / 2), w)) * 0xff
+    top_padding = np.ones((int((target_h - h) / 2), w), dtype=np.uint8) * 0xff
     img = np.vstack([top_padding, img])
 
-    bottom_padding = np.ones((target_h - h - top_padding.shape[0], w)) * 0xff
+    bottom_padding = np.ones((target_h - h - top_padding.shape[0], w), dtype=np.uint8) * 0xff
     img = np.vstack([img, bottom_padding])
 
     return img
@@ -38,8 +38,8 @@ def make_between_img(im1: np.ndarray, im2: np.ndarray):
     elif h2 > h1:
         right_im1 = pad_white_centered(right_im1, h2)
 
-    plt.imshow(np.hstack([right_im1, left_im2]))
-    plt.show()
+    # plt.imshow(np.hstack([right_im1, left_im2]))
+    # plt.show()
 
     return np.hstack([right_im1, left_im2])
 
@@ -63,15 +63,11 @@ class OnBetweenDataset(ABC):
         for _ in range(between_data_size):
             im1 = random.choice(imgs)
             im2 = random.choice(imgs)
-            between_imgs.append((make_between_img(im1, im2), "between"))
+            between_imgs.append(make_between_img(im1, im2))
 
-        print(len(imgs))
-        print(len(imgs[0]))
-        print(type(imgs))
-        print(type(imgs[0]))
         # add the "between" images, with label 1
-        # imgs = imgs + tuple(between_imgs)
-        # labels = labels + tuple([1] * len(between_imgs))
+        imgs = imgs + tuple(between_imgs)
+        labels = labels + tuple([1] * len(between_imgs))
 
         # apply desired preprocessing if given
         imgs = self.with_preproc(imgs) if self.with_preproc is not None else imgs
