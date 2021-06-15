@@ -1,7 +1,7 @@
 from ..types import *
 from ..utils import crop_boxes_fixed
 from ..data.on_between_dataset import OnBetweenDataset
-from ..models.cnn import default_cnn_monkbrill, collate
+from ..models.cnn import monkbrill_with_between_class, collate
 from ..models.loss import FuzzyLoss, TaylorSoftmax
 from ..models.training import Trainer, Metrics
 
@@ -47,7 +47,7 @@ def main(data_root: str,
         test_dl = DataLoader(test_ds, shuffle=False, batch_size=batch_size,
                              collate_fn=collate(device)) if test_ds is not None else None
 
-        model = default_cnn_monkbrill().to(device)
+        model = monkbrill_with_between_class().to(device)
         if load_path is not None:
             model.load_pretrained(load_path)
         optim = AdamW(model.parameters(), lr=lr, weight_decay=wd)

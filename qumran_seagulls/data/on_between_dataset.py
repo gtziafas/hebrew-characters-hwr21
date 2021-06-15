@@ -56,7 +56,7 @@ class OnBetweenDataset(ABC):
         on_dataset = ImageFolder(root=root)
         # return only first channel as images are binary anyway
         # discard individual labels, as they don't matter for segmentation
-        imgs, labels = zip(*[(array(x)[..., 0], 0) for x, _ in on_dataset])
+        imgs, labels = zip(*[(array(x)[..., 0], y) for x, y in on_dataset])
 
         between_imgs = []
         between_data_size = len(on_dataset)
@@ -67,7 +67,7 @@ class OnBetweenDataset(ABC):
 
         # add the "between" images, with label 1
         imgs = imgs + tuple(between_imgs)
-        labels = labels + tuple([1] * len(between_imgs))
+        labels = labels + tuple([27] * len(between_imgs))
 
         # apply desired preprocessing if given
         imgs = self.with_preproc(imgs) if self.with_preproc is not None else imgs

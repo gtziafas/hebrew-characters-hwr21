@@ -77,5 +77,9 @@ def default_cnn_monkbrill() -> BaselineCNN:
     return BaselineCNN(num_classes=27, dropout_rates=[0.1, 0.5], inp_shape=(75, 75), num_features=1024)
 
 
+def monkbrill_with_between_class() -> BaselineCNN:
+    return BaselineCNN(num_classes=28, dropout_rates=[0.1, 0.5], inp_shape=(75, 75), num_features=1024)
+
+
 def default_cnn_styles() -> BaselineCNN:
     return BaselineCNN(num_classes=3, dropout_rates=[0.1, 0.5], inp_shape=(75, 75), num_features=1024)

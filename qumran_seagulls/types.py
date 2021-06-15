@@ -39,7 +39,8 @@ LABEL_MAP = {None: 'nan', **{k: v for k, v in enumerate([
  'Tsadi-medial',
  'Waw',
  'Yod',
- 'Zayin'])}}
+ 'Zayin',
+ 'between'])}}
 
 STYLE_MAP = {None: 'nan', 0: 'Archaic', 1: 'Hasmonean', 2: 'Herodian'}
 
