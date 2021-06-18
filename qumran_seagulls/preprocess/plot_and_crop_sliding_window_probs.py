@@ -56,8 +56,8 @@ def plot_sliding_window(line_img: np.ndarray, cnn: BaselineCNN, step_size: int =
     h, w = np.shape(line_img)
     predictions = get_sliding_window_probs(line_img, cnn, step_size)
 
-    print(np.shape(predictions[1:28, :]))  # discard probability that we are in-between characters
-    max_probs = np.max(predictions[1:, :], axis=0)
+    # discard 1st row (index) and last row (probability of class "between")
+    max_probs = np.max(predictions[1:-1, :], axis=0)
     # print("line")
 
     # print("max_probs")

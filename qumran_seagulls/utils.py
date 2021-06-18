@@ -131,24 +131,24 @@ def crop_boxes_fixed(desired_shape: Tuple[int, int]) -> Callable[[List[array]], 
     def _crop_boxes_fixed(imgs: List[array]) -> List[array]:
         # threshold and invert
         imgs = thresh_invert_many(imgs)
-        
+
         # identify images larger than desired resolution
         large_idces = [idx for idx, i in enumerate(imgs) if i.shape[0] > H or i.shape[1] > W]
 
         # find contours for each large image
         contours = [cv2.findContours(imgs[i], cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0] for i in large_idces]
-        
+
         # sort by area and keep largest
         contours = [sorted(conts, key=lambda c: cv2.contourArea(c), reverse=True)[0] for conts in contours]
-        
+
         # compute largests contour center of gravity
         moments = [cv2.moments(c) for c in contours]
-        centers = [(int(M['m10']/M['m00']), int(M['m01']/M['m00'])) for M in moments]
+        centers = [(int(M['m10'] / M['m00']), int(M['m01'] / M['m00'])) for M in moments]
 
         # fix images in desired resolution
         for idx, center in zip(large_idces, centers):
             image = imgs[idx]
-            height, width = image.shape 
+            height, width = image.shape
             cx = max(0, center[0] - min(W, width) // 2)
             cy = max(0, center[1] - min(H, height) // 2)
             box = Box(cx, cy, min(W, width), min(H, height))
@@ -157,3 +157,13 @@ def crop_boxes_fixed(desired_shape: Tuple[int, int]) -> Callable[[List[array]], 
         return pad_with_frame(imgs, (H, W))
 
     return _crop_boxes_fixed
+
+
+def resize(desired_shape: Tuple[int, int]) -> Callable[[List[array]], List[array]]:
+
+    def _resize(imgs: List[array]) -> List[array]:
+        for idx, img in enumerate(imgs):
+            imgs[idx] = cv2.resize(img, desired_shape, interpolation=cv2.INTER_AREA)
+        return imgs
+
+    return _resize
