@@ -4,9 +4,10 @@ import cv2
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
-from typing import List
+from typing import *
 from qumran_seagulls.models.cnn import BaselineCNN, monkbrill_with_between_class
 from qumran_seagulls.persistence1d import RunPersistence
+from scipy.ndimage import gaussian_filter1d
 
 CNN_PATH = "../../data/saved_models/segmenter.pt"
 N_CLASSES = 28  # I think? Why is it so hard to get the size of the output without running the CNN
@@ -52,7 +53,7 @@ def get_sliding_window_probs(img: np.ndarray, cnn: BaselineCNN, step_size: int =
     return predictions
 
 
-def plot_sliding_window(line_img: np.ndarray, cnn: BaselineCNN, step_size: int = 10):
+def plot_sliding_window(line_img: np.ndarray, cnn: BaselineCNN, step_size: int = 10, to_remove: Tuple[int, int] = (0, 0)):
     h, w = np.shape(line_img)
     predictions = get_sliding_window_probs(line_img, cnn, step_size)
 
@@ -97,24 +98,68 @@ def plot_sliding_window(line_img: np.ndarray, cnn: BaselineCNN, step_size: int =
     return character_images
 
 
+def get_asc_desc_offsets(line_imgs: List[np.array]):
+    """This will identify the top and bottom offsets where ascenders and descenders are, for each line"""
+
+    # project horizontally
+    projections = [np.sum(line_image, axis=1) for line_image in line_imgs]
+    # smooth the projection
+    projections_filtered = [gaussian_filter1d(proj, sigma=6) for proj in projections]
+
+    # identify the mode of the projection
+    projection_maxes = [proj.argmax() for proj in projections_filtered]
+
+    # convert to list of tuples so idx can be changed
+    projection_points = [list(enumerate(proj)) for proj in projections]
+
+    # align all projections so mode is on 0
+    projection_points_centered = [[((x - offset), y) for (x, y) in proj] for (proj, offset) in zip(projection_points, projection_maxes)]
+
+    # convert to dict since the x values are not changing and it's easier to search
+    proj_pts_centered_dict = [dict(proj) for proj in projection_points_centered]
+
+    # get all indices so we know how to sum the projections
+    x_values = np.unique([x for proj in projection_points_centered for (x, y) in proj])
+    y_values = np.zeros_like(x_values)
+
+    # for each x, sum the projection on every image that is on that x
+    for idx, x_value in enumerate(x_values):
+        for proj in proj_pts_centered_dict:
+            y_values[idx] += proj.get(x_value,0)
+
+    # # normalize to [0, 1]
+    y_values = y_values.astype('float64')
+    y_values /= np.max(y_values)
+
+    print(f"xvals {x_values}\n")
+    print(f"yvals {y_values}\n")
+
+    plt.plot(x_values, y_values)
+    plt.show()
+
 def main():
 
     file_id = "P106-Fg002-R-C01-R01"
     saved_cnn = monkbrill_with_between_class()
     saved_cnn.load_state_dict(torch.load(CNN_PATH))
 
+    line_imgs = []
     for i in range(1, 14):
-        plt.figure(i)
-        example_img = 0xff - cv2.imread(str(f"../../data/lines_cropped/{file_id}/line_{i}.jpg"), cv2.IMREAD_GRAYSCALE)
-        char_imgs = plot_sliding_window(example_img, saved_cnn, step_size=15)
-        for idx, char_img in enumerate(char_imgs):
-            print(f"line: {i} char: {idx} shape: {char_img.shape}")
-            dest_dir = f"../../data/chars_cropped/{file_id}/line_{i:02}/"
-            os.makedirs(dest_dir, exist_ok=True)
-            plt.imsave(dest_dir + f"char_{idx:03}.jpg", char_img)
-            # plt.imshow(char_img)
-            # plt.show()
-    plt.show()
+        line_imgs.append(0xff - cv2.imread(str(f"../../data/lines_cropped/{file_id}/line_{i}.jpg"), cv2.IMREAD_GRAYSCALE))
+
+    to_remove = get_asc_desc_offsets(line_imgs)
+
+    # for line_img in line_imgs:
+    #     plt.figure(i)
+    #     char_imgs = plot_sliding_window(line_img, saved_cnn, step_size=15)
+    #     for idx, char_img in enumerate(char_imgs):
+    #         print(f"line: {i} char: {idx} shape: {char_img.shape}")
+    #         dest_dir = f"../../data/chars_cropped/{file_id}/line_{i:02}/"
+    #         os.makedirs(dest_dir, exist_ok=True)
+    #         plt.imsave(dest_dir + f"char_{idx:03}.jpg", char_img)
+    #         # plt.imshow(char_img)
+    #         # plt.show()
+    # plt.show()
 
 
 if __name__ == "__main__":
