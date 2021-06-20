@@ -98,7 +98,7 @@ def plot_sliding_window(line_img: np.ndarray, cnn: BaselineCNN, step_size: int =
     return character_images
 
 
-def get_asc_desc_offsets(line_imgs: List[np.array]):
+def get_asc_desc_offsets(line_imgs: List[np.array], threshold=0.05):
     """This will identify the top and bottom offsets where ascenders and descenders are, for each line"""
 
     # project horizontally
@@ -135,7 +135,22 @@ def get_asc_desc_offsets(line_imgs: List[np.array]):
     print(f"yvals {y_values}\n")
 
     plt.plot(x_values, y_values)
+    plt.hlines(threshold, np.min(x_values), np.max(x_values), colors=["red"])
+
+    x_lim_top = x_values[np.where(y_values >= threshold)[0][0]]
+    x_lim_bottom = x_values[np.where(y_values >= threshold)[0][-1]]
+    print(f"xtop {x_lim_top}\n")
+    print(f"xbot {x_lim_bottom}\n")
+
+    plt.vlines(x_lim_top, np.min(y_values), np.max(y_values), colors=["green"])
+    plt.vlines(x_lim_bottom, np.min(y_values), np.max(y_values), colors=["green"])
+
     plt.show()
+
+    offsets = [(x_lim_top + offset, x_lim_bottom + offset) for offset in projection_maxes]
+
+    return offsets
+
 
 def main():
 
