@@ -32,17 +32,22 @@ def crop_characters_from_line(line_img: np.ndarray, coords: List[int]) -> List[n
 def get_sliding_window_probs(img: np.ndarray, cnn: BaselineCNN, step_size: int = 10,
                              asc_desc_offset: Tuple[int, int] = (0, 0)) -> np.ndarray:
     h, w = np.shape(img)
-    predictions = np.zeros((N_CLASSES + 1, int(w / step_size) + 1))  # N_CLASSES + 1 because we will use the first row for the window position
+    # N_CLASSES + 1 because we will use the first row for the window position
+    predictions = np.zeros((N_CLASSES + 1, int(w / step_size) + 1))
+
+    window_top_edge, window_bottom_edge = asc_desc_offset
 
     np.set_printoptions(edgeitems=30, linewidth=100000,
                         formatter=dict(float=lambda x: "%+.3f" % x))
 
-    for window_right_edge in range(w, h, -step_size):  # starting from the right, we go left, until we hit h, i.e. the last square window
-        predictions[0, int(window_right_edge / step_size)] = window_right_edge  # window position, this is the x position needed for the plot
+    # starting from the right, we go left, until we hit the last square window
+    for window_right_edge in range(w, window_bottom_edge - window_top_edge, -step_size):
+        # window position, this is the x position needed for the plot
+        predictions[0, int(window_right_edge / step_size)] = window_right_edge
 
-        window_top_edge, window_bottom_edge = asc_desc_offset
-
-        window = img[window_top_edge:window_bottom_edge, window_right_edge - h:window_right_edge]  # crop the window
+        # crop a square window with size (window_bottom_ege - window_top_edge)
+        window = img[window_top_edge:window_bottom_edge,
+                     window_right_edge - (window_bottom_edge - window_top_edge):window_right_edge]  # crop the window
         y = cnn.predict_scores(imgs=[window], device='cpu').softmax(dim=-1)
         # print(y)
         predictions[1:, int(window_right_edge / step_size)] = y.detach()
@@ -88,6 +93,7 @@ def plot_sliding_window(line_img: np.ndarray, cnn: BaselineCNN, step_size: int =
 
     plt.imshow(line_img)
     if show_max:
+        # plot max_probs and some markers
         plt.plot(predictions[0] - h / 2, h * 2 - h * max_probs)
 
         plt.ylim(ymin=0, ymax=2 * h)
@@ -98,6 +104,7 @@ def plot_sliding_window(line_img: np.ndarray, cnn: BaselineCNN, step_size: int =
         plt.vlines(x=sorted_minima_pixel_coords, ymin=0, ymax=2 * h, color="green")
         plt.hlines(y=asc_desc_offset, xmin=0, xmax=w, color="red")
     else:
+        # plot probs for each class individually
         for cls in range(N_CLASSES):
             plt.plot(predictions[0] - h / 2, h * 2 - h * predictions[cls + 1])
             plt.ylim(ymin=0, ymax=2 * h)
