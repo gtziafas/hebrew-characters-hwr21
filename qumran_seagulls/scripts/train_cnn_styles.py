@@ -1,5 +1,5 @@
 from ..types import *
-from ..utils import crop_boxes_fixed
+from ..utils import crop_boxes_fixed, pad_with_frame
 from ..data.styles_dataset import StylesDataset
 from ..models.cnn import default_cnn_styles
 from ..models.loss import FuzzyLoss, TaylorSoftmax
@@ -81,7 +81,7 @@ def main(data_root: str,
         # 80%-20% random train-dev split
         dev_size = int(.2 * len(ds))
         train_ds, dev_ds = random_split(ds, [len(ds) - dev_size, dev_size], generator=SEED)
-        test_ds = StyleslDataset(test_root, with_preproc=crop_boxes_fixed(FIXED_SHAPE)) if test_root is not None else None
+        test_ds = StylesDataset(test_root, with_preproc=crop_boxes_fixed(FIXED_SHAPE)) if test_root is not None else None
 
     else:
         # load splits from checkpoint
