@@ -70,7 +70,7 @@ class OnBetweenDataset(ABC):
         labels = labels + tuple([27] * len(between_imgs))
 
         # apply desired preprocessing if given
-        imgs = self.with_preproc(imgs) if self.with_preproc is not None else imgs
+        imgs = self.with_preproc(list(imgs)) if self.with_preproc is not None else imgs
         return [Character(image=x, label=y) for x, y in zip(imgs, labels)]
 
     def __getitem__(self, n: int) -> Character:

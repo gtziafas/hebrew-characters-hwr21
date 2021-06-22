@@ -1,13 +1,15 @@
 from ..types import *
-from ..utils import pad_with_frame, filter_large, crop_boxes_fixed
+from ..utils import pad_with_frame, filter_large, crop_boxes_fixed, resize
 
 import torch.nn as nn 
 from torch import tensor, stack, no_grad, load
 
 
 class BaselineCNN(nn.Module):
-    def __init__(self, num_classes: int, dropout_rates: List[float], inp_shape: Tuple[int, int], num_features: int):
+    def __init__(self, num_classes: int, dropout_rates: List[float], inp_shape: Tuple[int, int], num_features: int,
+                 with_preproc: Maybe[Callable[[List[array]], List[array]]] = None):
         super().__init__()
+        self.with_preproc = with_preproc
         self.inp_shape = inp_shape
         self.block1 = self.block(in_channels=1, out_channels=16, conv_kernel=3, pool_kernel=3, dropout=0.) 
         self.block2 = self.block(in_channels=16, out_channels=32, conv_kernel=3, pool_kernel=2, dropout=dropout_rates[0])
@@ -41,8 +43,8 @@ class BaselineCNN(nn.Module):
         self.eval()
         # filtered = filter_large(self.inp_shape)(imgs)
         # padded = pad_with_frame(filtered, self.inp_shape)
-        padded = crop_boxes_fixed(self.inp_shape)(imgs)
-        tensorized = stack([tensor(img / 0xff, dtype=floatt, device=device) for img in padded])
+        imgs = self.with_preproc(list(imgs)) if self.with_preproc is not None else imgs
+        tensorized = stack([tensor(img / 0xff, dtype=floatt, device=device) for img in imgs])
         scores = self.forward(tensorized.unsqueeze(1))
         return scores
 
@@ -56,7 +58,7 @@ class BaselineCNN(nn.Module):
         self.load_state_dict(checkpoint)
 
 
-def collate(device: str, with_padding: Maybe[Tuple[int, int]]=None) -> Callable[[List[Character]], Tuple[Tensor, Tensor]]:
+def collate(device: str, with_padding: Maybe[Tuple[int, int]] = None) -> Callable[[List[Character]], Tuple[Tensor, Tensor]]:
     
     def _collate(batch: List[Character]) -> Tuple[Tensor, Tensor]:
         imgs, labels = zip(*[(s.image, s.label) for s in batch])
@@ -74,12 +76,15 @@ def collate(device: str, with_padding: Maybe[Tuple[int, int]]=None) -> Callable[
 
 
 def default_cnn_monkbrill() -> BaselineCNN:
-    return BaselineCNN(num_classes=27, dropout_rates=[0.1, 0.5], inp_shape=(75, 75), num_features=1024)
+    return BaselineCNN(num_classes=27, dropout_rates=[0.1, 0.5], inp_shape=(75, 75), num_features=1024,
+                       with_preproc=crop_boxes_fixed((75, 75)))
 
 
 def monkbrill_with_between_class() -> BaselineCNN:
-    return BaselineCNN(num_classes=28, dropout_rates=[0.1, 0.5], inp_shape=(75, 75), num_features=1024)
+    return BaselineCNN(num_classes=28, dropout_rates=[0.1, 0.5], inp_shape=(75, 75), num_features=1024,
+                       with_preproc=resize((75, 75)))
 
 
 def default_cnn_styles() -> BaselineCNN:
-    return BaselineCNN(num_classes=3, dropout_rates=[0.1, 0.5], inp_shape=(75, 75), num_features=1024)
+    return BaselineCNN(num_classes=3, dropout_rates=[0.1, 0.5], inp_shape=(75, 75), num_features=1024,
+                       with_preproc=crop_boxes_fixed((75, 75)))

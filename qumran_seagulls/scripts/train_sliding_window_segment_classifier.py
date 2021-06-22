@@ -1,5 +1,5 @@
 from ..types import *
-from ..utils import crop_boxes_fixed
+from ..utils import resize
 from ..data.on_between_dataset import OnBetweenDataset
 from ..models.cnn import monkbrill_with_between_class, collate
 from ..models.loss import FuzzyLoss, TaylorSoftmax
@@ -59,8 +59,8 @@ def main(data_root: str,
         return trainer.iterate(num_epochs, with_save=save_path, print_log=print_log)
 
     print('Loading / Preprocessing dataset...')
-    ds = OnBetweenDataset(data_root, with_preproc=crop_boxes_fixed(FIXED_SHAPE))
-    test_ds = OnBetweenDataset(test_root, with_preproc=crop_boxes_fixed(FIXED_SHAPE)) if test_root is not None else None
+    ds = OnBetweenDataset(data_root, with_preproc=resize(FIXED_SHAPE))
+    test_ds = OnBetweenDataset(test_root, with_preproc=resize(FIXED_SHAPE)) if test_root is not None else None
 
     if not kfold:
         # train once in a 80%-20% train-dev split
