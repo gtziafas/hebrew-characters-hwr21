@@ -11,7 +11,7 @@ from PIL import Image
 
 
 class Augmenter:
-    def __init__(self, dataset='habbakuk'):
+    def __init__(self, dataset='habbakuk', samples_per_char=300):
         self.class_labels_chars = {
             'Alef': 0,
             'Ayin': 1,
@@ -55,7 +55,7 @@ class Augmenter:
         self.images = self.load_styles() if dataset is 'styles' else self.load_habbakuk()
         self.clear = lambda: os.system('clear')
         # we want 300 samples per class
-        self.samples_per_class = 50
+        self.samples_per_class = samples_per_char
         # imgaug augmentations:
         self.elastic_transform = iaa.ElasticTransformation(alpha=(5, 30), sigma=(3, 7))
         self.perspective_transform = iaa.PerspectiveTransform(scale=(0.05, 0.10))
@@ -290,12 +290,13 @@ class Augmenter:
         augmented = cv2.bitwise_not(augmented)
         aug_name = str(augmentation.__name__).replace('self.', '')
         return augmented, aug_name
+
     '''
-    Create a total of 300 different samples (including monkbrill samples)
-    self.samples will contain all monkbrill samples and all augmenten samples (300 per class)
+    Augment either habbakuk to supplement the monkbrill dataset, or augment the styles dataset to supplement the
+    styles dataset. 
     
-    Atm I also write all generated samples to a augmented/ The amount of samples will differ
-    depending on the amount of samples that are already available from monkbrill 
+    Creates folders containing augmented samples, and returns a list containing the wole dataset i.e. original samples
+    and augmented samples. The list is filled with tuples: (image, class_label) 
     '''
 
     def augment(self):
@@ -304,12 +305,6 @@ class Augmenter:
                          self.dilate_affine, self.erode_elastic, self.dilate_elastic, self.elastic_affine,
                          self.perspective_affine, self.elastic_perspective_affine, self.dilate_elastic_affine,
                          self.erode_elastic_affine]
-
-        '''
-        TODO: Fix load monbrill, Ik wil dat de ist met samples een list van tuples wordt: (image, label)
-        Daarnaast wil ik ook tellen hoeveel samples er in een class zitten van styles,  net als ik dat doe bij monkbrill
-        en dan aan de hand daarvan een bepaald aantal samples genereren
-        '''
 
         if self.dataset is 'habbakuk':
             self.load_monkbrill()  # for habbakuk we need to load the samples separately like this
@@ -375,8 +370,8 @@ class Augmenter:
 
 
 def main():
-    A = Augmenter()
-    A.augment()
+    A = Augmenter(dataset='habbakuk', samples_per_char=300)
+    dataset = A.augment()  # dataset is a list filled with tuples: (image, class_label)
 
 
 if __name__ == '__main__':
