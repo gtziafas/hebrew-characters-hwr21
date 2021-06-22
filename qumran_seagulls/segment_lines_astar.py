@@ -6,7 +6,7 @@ import numpy as np
 from persistence1d import RunPersistence
 
 debug = True
-min_persistence = 150
+min_persistence = 30
 
 
 def crop_straight_from_minima(image, minima):
@@ -33,8 +33,8 @@ def segment_img(image):
     sorted_minima = sorted(filtered_minima)
     print(sorted_minima)
 
-    plt.plot(histogram[sorted_minima], sorted_minima, "x")
-    plt.hlines(y=sorted_minima, xmin=0, xmax=w, color="green")
+    plt.plot(sorted_minima, histogram[sorted_minima], "x")
+    plt.vlines(x=sorted_minima, ymin=0, ymax=h, color="green")
 
     if debug:
         plt.show()
@@ -43,7 +43,7 @@ def segment_img(image):
 
 
 def main():
-    example_img_path = "../data/images/P123-Fg001-R-C01-R01-binarized.jpg"
+    example_img_path = "../data/extracted_images/P106-Fg002-R-C01-R01/line_1.jpg"
     example_img = (255 - cv2.imread(str(example_img_path), cv2.IMREAD_GRAYSCALE)) / 255
     segment_img(example_img)
 
