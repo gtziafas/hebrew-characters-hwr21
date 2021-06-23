@@ -192,9 +192,9 @@ def draw_line(example_img_path, path):
     for p in path:
         d.line(p, width=1)
 
-    if not os.path.exists('../../../data/extracted_images/'):
-        os.mkdir('../../../data/extracted_images/')
-    save_filename = r"../data/extracted_images/" + os.path.split(example_img_path)[1]
+    if not os.path.exists('data/extracted_images/'):
+        os.mkdir('data/extracted_images/')
+    save_filename = r"data/extracted_images/" + os.path.split(example_img_path)[1]
     im.save(save_filename)
 
 
@@ -285,7 +285,7 @@ def main(argv):
         plot_lines(example_img, paths)
     cropped_lines = crop_lines(example_img, paths)
 
-    cropped_lines_dir_path = os.path.splitext('../data/extracted_images/' + os.path.split(example_img_path)[1])[0].replace('-binarized','')
+    cropped_lines_dir_path = os.path.splitext('data/extracted_images/' + os.path.split(example_img_path)[1])[0].replace('-binarized','')
 
     if not os.path.exists(cropped_lines_dir_path):
         os.makedirs(cropped_lines_dir_path, exist_ok=True)
