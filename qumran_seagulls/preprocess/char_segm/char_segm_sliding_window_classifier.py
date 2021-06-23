@@ -200,5 +200,5 @@ if __name__ == "__main__":
     main()
 
 # command:
-# python3 -m qumran_seagulls.preprocess.char_segm.plot_and_crop_sliding_window_probs
+# python3 -m qumran_seagulls.preprocess.char_segm.char_segm_sliding_window_classifier
 # from project root folder

@@ -201,3 +201,7 @@ def segment_chars_from_line(line: array,
     # crop original image to segments
     ...
     return 1
+
+# command:
+# python3 -m qumran_seagulls.preprocess.char_segm.char_segm_handcrafted
+# from project root folder

@@ -52,5 +52,5 @@ if __name__ == "__main__":
     main()
 
 # command:
-# python3 -m qumran_seagulls.preprocess.line_segm.segment_lines_astar
+# python3 -m qumran_seagulls.preprocess.line_segm.line_segm_straight
 # from project root folder
