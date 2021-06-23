@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from typing import *
 from qumran_seagulls.models.cnn import BaselineCNN, monkbrill_with_between_class
-from qumran_seagulls.persistence1d import RunPersistence
+from qumran_seagulls.preprocess.persistence1d import RunPersistence
 from scipy.ndimage import gaussian_filter1d
 
 CNN_PATH = "../../data/saved_models/segmenter.pt"

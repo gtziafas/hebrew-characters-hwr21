@@ -43,7 +43,7 @@ def segment_img(image):
 
 
 def main():
-    example_img_path = "../data/extracted_images/P106-Fg002-R-C01-R01/line_1.jpg"
+    example_img_path = "../../data/extracted_images/P106-Fg002-R-C01-R01/line_1.jpg"
     example_img = (255 - cv2.imread(str(example_img_path), cv2.IMREAD_GRAYSCALE)) / 255
     segment_img(example_img)
 
