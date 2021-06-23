@@ -17,7 +17,7 @@ def get_sorted_minima(image: np.array, min_persistence, axis) -> List[int]:
     return sorted_minima
 
 
-def blocker_dist(child, image):
+def blocker_dist(child, image, debug):
     d_x = []
     for new_pos in [1, -1]:
         i = 0
@@ -31,7 +31,8 @@ def blocker_dist(child, image):
         if (x_cord > image.shape[1]-1) or x_cord < 0:
             d_x.append(10000)  # some maximum value
 
-    print(d_x)
+    if debug:
+        print(d_x)
     D = 1 / (1+np.min(d_x))
     D2 = 1 / ((1+np.min(d_x))**2)
     return D, D2

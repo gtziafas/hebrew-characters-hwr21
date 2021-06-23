@@ -107,12 +107,13 @@ def astar(image, start, end, avg_dist):
                     child.n = 10
                 child.h = (np.abs(child.position[0] - end_node.position[0])**2) + (np.abs(child.position[1] - end_node.position[1])**2)
                 child.v = np.abs(child.position[0] - start_node.position[0])  # cost for horizontal movement
-                child.d, child.d2 = blocker_dist(child, image)
+                child.d, child.d2 = blocker_dist(child, image, debug=debug)
                 if image[child.position[1], child.position[0]] > 0.9:
                     child.m = 1000
                 child.g = current_node.g + child.n + child.v + child.m + child.d + child.d2
                 child.f = child.g + child.h  # heuristic still needed to speed up computations
-                print(child.position, child.f)
+                if debug:
+                    print(child.position, child.f)
 
                 # Child is already in the open list
                 for open_node in open_list:
