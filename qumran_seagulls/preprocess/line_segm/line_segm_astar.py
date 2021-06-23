@@ -1,67 +1,12 @@
-# Add data/extracted_images folder
 import sys
-
-import cv2
-import numpy as np
-import matplotlib.pyplot as plt
-from PIL import Image, ImageDraw
 from tqdm import tqdm  # progress bar
-from qumran_seagulls.types import *
-import os
 
-from qumran_seagulls.preprocess.shared_astar_funcs.persistence1d import RunPersistence
+from qumran_seagulls.preprocess.shared_astar_funcs.astar_funcs import *
+from qumran_seagulls.types import *
+
 
 min_persistence = 170
 debug = False
-
-
-def get_sorted_minima(image: np.array) -> List[int]:
-    histogram = np.sum(image, axis=1)
-    extrema = RunPersistence(histogram)
-    minima = extrema[0::2]  # odd elements are minima
-    filtered_minima = [t[0] for t in minima if t[1] > min_persistence]
-    sorted_minima = sorted(filtered_minima)
-    return sorted_minima
-
-
-class Node:
-    """A node class for A* Pathfinding"""
-
-    def __init__(self, parent=None, position=None):
-        self.parent = parent
-        self.position = position
-
-        self.g = 0
-        self.h = 0
-        self.f = 0
-        self.d = 0
-        self.n = 0
-        self.m = 0
-        self.v = 0
-        self.d2 = 0
-
-    def __eq__(self, other):
-        return self.position == other.position
-
-
-# def blocker_dist(child, image):
-#     d_y = []
-#     for new_pos in [1, -1]:
-#         i = 0
-#         y_cord = child.position[1]
-#         while (y_cord <= image.shape[0]-1) and y_cord >= 0:
-#             if image[y_cord, child.position[0]] != 0:
-#                 d_y.append(i)
-#                 break
-#             i += 1
-#             y_cord += new_pos
-#         if (y_cord > image.shape[0]-1) or y_cord < 0:
-#             d_y.append(2709)  # some maximum value
-#
-#     print(d_y)
-#     D = 1 / (1+np.min(d_y))
-#     D2 = 1 / ((1+np.min(d_y))**2)
-#     return D, D2
 
 
 def astar(image, start, end, avg_dist):
@@ -137,7 +82,7 @@ def astar(image, start, end, avg_dist):
 
             # adding all nodes and assigning extra cost for an ink cut later
             if child_num == 0:
-                new_node = Node(current_node, (current_node.position[0]+1, current_node.position[1]))
+                new_node = Node(current_node, (current_node.position[0] + 1, current_node.position[1]))
                 children.append(new_node)
                 if debug:
                     print("must cut through line")
@@ -158,13 +103,12 @@ def astar(image, start, end, avg_dist):
                 else:
                     child.n = 10
                 child.h = (np.abs(child.position[0] - end_node.position[0])**2) + (np.abs(child.position[1] - end_node.position[1])**2)
-                child.v = np.abs(child.position[1] - start_node.position[1]) #cost for vertical movement
+                child.v = np.abs(child.position[1] - start_node.position[1])  # cost for vertical movement
 
                 if image[child.position[1], child.position[0]] != 0:
                     child.m = 25
                 child.g = current_node.g + child.n + child.v + child.m
                 child.f = child.g + child.h  # heuristic still needed to speed up computations
-
 
                 # Child is already in the open list
                 for open_node in open_list:
@@ -185,92 +129,28 @@ def astar(image, start, end, avg_dist):
                 pbar.update(child.position[0] - pbar.n)
 
 
-def draw_line(example_img_path, path):
-    im = Image.open(example_img_path)
-    d = ImageDraw.Draw(im)
-
-    for p in path:
-        d.line(p, width=1)
-
-    if not os.path.exists('data/extracted_images/'):
-        os.mkdir('data/extracted_images/')
-    save_filename = r"data/extracted_images/" + os.path.split(example_img_path)[1]
-    im.save(save_filename)
-
-
-def plot_lines(image, paths):
-    plt.imshow(image)
-
-    for path in paths:
-        plt.plot(*zip(*path))
-
-    plt.show()
-
-
-def crop_lines(image: np.ndarray, paths: List[List[Tuple[int]]]):
-    """
-    Crops all the lines from the image, given the paths between them
-    Based on: https://stackoverflow.com/questions/48301186/cropping-concave-polygon-from-image-using-opencv-python
-    :param image: image to be cropped
-    :param paths: list of paths, each path being a list of 2d coordinates
-    :return:
-    """
-
-    normalized_img = image * 255
-
-    cropped_lines = []
-    l = len(paths)
-    for i in range(l - 1):  # we need the current path and the next one
-        upper_path = paths[i]
-        lower_path = paths[i+1]
-        polygon = np.array(upper_path + lower_path[::-1])  # go right on the upper path and left on the lower path
-                                                           # to obtain a polygon that doesn't cross itself
-
-        # (1) Crop the bounding rect
-        rect = cv2.boundingRect(polygon)
-        x, y, w, h = rect
-        cropped = normalized_img[y:y + h, x:x + w].copy()
-
-        # (2) make mask
-        polygon = polygon - polygon.min(axis=0)
-
-        mask = np.zeros(cropped.shape[:2], np.uint8)
-        cv2.drawContours(mask, [polygon], -1, (255, 255, 255), -1, cv2.LINE_AA)
-
-        # (3) do bit-op
-        dst = cv2.bitwise_and(cropped, cropped, mask=mask)
-
-        np.set_printoptions(edgeitems=30, linewidth=100000,
-                            formatter=dict(float=lambda x: "%.3d" % x))
-        if debug:
-            plt.imshow(dst/255)
-            plt.show()
-        cropped_lines.append(dst)
-
-    return cropped_lines
-
-
 def segment_img(image):
     h, w = np.shape(image)
-    minima = get_sorted_minima(image)
+    minima = get_sorted_minima(image, min_persistence=min_persistence, axis=1)
     all_paths = []
     path = []
 
     print(f"Identified {len(minima)} lines. Image width: {w}. Computing paths...")
 
-    #adding extra line in path
+    # adding extra line in path
     for i in range(image.shape[1]):
         path.append(tuple([i, 1]))
     all_paths.append(path)
-    for pos in range(1,len(minima)):
 
+    for pos in range(1, len(minima)):
         print(f"Computing path for line {pos}/{len(minima)}...")
         start = (0, minima[pos])
         end = (w - 1, minima[pos])
-        avg_dist = (minima[pos] - minima[pos-1])/2
+        avg_dist = (minima[pos] - minima[pos - 1]) / 2
         path = astar(image, start, end, avg_dist)
         if debug:
             print(path)
+            print(start, end)
         all_paths.append(path)
     return all_paths
 
@@ -281,17 +161,16 @@ def main(argv):
     example_img = (255 - cv2.imread(str(example_img_path), cv2.IMREAD_GRAYSCALE))/255
     paths = segment_img(example_img)
     if debug:
-        draw_line(example_img_path, paths)
+        draw_lines(example_img_path, paths, dirname="extracted_images")
         plot_lines(example_img, paths)
-    cropped_lines = crop_lines(example_img, paths)
-
+    cropped_lines = crop_lines(example_img, paths, debug=debug)
     cropped_lines_dir_path = os.path.splitext('data/extracted_images/' + os.path.split(example_img_path)[1])[0].replace('-binarized','')
 
     if not os.path.exists(cropped_lines_dir_path):
         os.makedirs(cropped_lines_dir_path, exist_ok=True)
     for idx, cropped_line in enumerate(cropped_lines):
         filename = cropped_lines_dir_path + "/line_" + str(idx) + ".jpg"
-        cv2.imwrite(filename, 255-cropped_line)
+        cv2.imwrite(filename, 255 - cropped_line)
 
 
 if __name__ == '__main__':
