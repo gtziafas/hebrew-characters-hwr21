@@ -85,8 +85,10 @@ def plot_sliding_window(line_img: np.ndarray, cnn: BaselineCNN, step_size: int =
     sorted_minima = sorted(filtered_minima)
     print(sorted_minima)
 
+    window_size = abs(asc_desc_offset[1] - asc_desc_offset[0])
+
     # Minima are indexed by window number, index by horizontal pixel coordinate instead
-    sorted_minima_pixel_coords = [int(s * step_size + h/2) for s in sorted_minima]
+    sorted_minima_pixel_coords = [int(s * step_size + window_size / 2) for s in sorted_minima]
 
     # Crop the characters, based on the identified minima
     character_images = crop_characters_from_line(line_img, sorted_minima_pixel_coords)
@@ -94,7 +96,7 @@ def plot_sliding_window(line_img: np.ndarray, cnn: BaselineCNN, step_size: int =
     plt.imshow(line_img)
     if show_max:
         # plot max_probs and some markers
-        plt.plot(predictions[0] - h / 2, h * 2 - h * max_probs)
+        plt.plot(predictions[0] - window_size / 2, h * 2 - h * max_probs)
 
         plt.ylim(ymin=0, ymax=2 * h)
         plt.yticks([0, h, 2 * h])
@@ -144,7 +146,7 @@ def get_asc_desc_offsets(line_imgs: List[np.array], threshold=0.05):
     # for each x, sum the projection on every image that is on that x
     for idx, x_value in enumerate(x_values):
         for proj in proj_pts_centered_dict:
-            y_values[idx] += proj.get(x_value,0)
+            y_values[idx] += proj.get(x_value, 0)
 
     # # normalize to [0, 1]
     y_values = y_values.astype('float64')
