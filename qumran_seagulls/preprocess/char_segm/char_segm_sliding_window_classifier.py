@@ -15,6 +15,8 @@ input_dim = (75, 75)  # same
 show_max = True  # show only the max prob in each point
 min_persistence = 0.4
 
+debug = False
+
 
 def crop_characters_from_line(line_img: np.ndarray, coords: List[int]) -> List[np.ndarray]:
     """
@@ -80,10 +82,12 @@ def plot_sliding_window(line_img: np.ndarray, cnn: BaselineCNN, step_size: int =
     # Identify the minima in the probabilities
     extrema = RunPersistence(max_probs)
     minima = extrema[0::2]  # odd elements are minima
-    print(minima)
+    if debug:
+        print(minima)
     filtered_minima = [t[0] for t in minima if t[1] > min_persistence]
     sorted_minima = sorted(filtered_minima)
-    print(sorted_minima)
+    if debug:
+        print(sorted_minima)
 
     window_size = abs(asc_desc_offset[1] - asc_desc_offset[0])
 
@@ -152,16 +156,18 @@ def get_asc_desc_offsets(line_imgs: List[np.array], threshold=0.05):
     y_values = y_values.astype('float64')
     y_values /= np.max(y_values)
 
-    print(f"xvals {x_values}\n")
-    print(f"yvals {y_values}\n")
+    if debug:
+        print(f"xvals {x_values}\n")
+        print(f"yvals {y_values}\n")
 
     plt.plot(x_values, y_values)
     plt.hlines(threshold, np.min(x_values), np.max(x_values), colors=["red"])
 
     x_lim_top = x_values[np.where(y_values >= threshold)[0][0]]
     x_lim_bottom = x_values[np.where(y_values >= threshold)[0][-1]]
-    print(f"xtop {x_lim_top}\n")
-    print(f"xbot {x_lim_bottom}\n")
+    if debug:
+        print(f"xtop {x_lim_top}\n")
+        print(f"xbot {x_lim_bottom}\n")
 
     plt.vlines(x_lim_top, np.min(y_values), np.max(y_values), colors=["green"])
     plt.vlines(x_lim_bottom, np.min(y_values), np.max(y_values), colors=["green"])
