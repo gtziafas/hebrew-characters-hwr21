@@ -1,4 +1,5 @@
 import os
+import random
 import sys
 
 import imgaug as ia
@@ -11,7 +12,7 @@ from PIL import Image
 
 
 class Augmenter:
-    def __init__(self, dataset='habbakuk', samples_per_char=300):
+    def __init__(self, dataset='habbakuk', samples_per_char=300, supplement_original_samples=True):
         self.class_labels_chars = {
             'Alef': 0,
             'Ayin': 1,
@@ -47,6 +48,9 @@ class Augmenter:
             'Hasmonean': 1,
             'Herodian': 2
         }
+        # If True create "samples_per_char" amount of samples, else supplement the original samples till
+        # 'samples_per_class' amount is reached
+        self.supplement_original_samples = supplement_original_samples
         self.dataset = dataset
         self.samples = []
         self.path_habbakuk_font = 'dump/'
@@ -118,7 +122,7 @@ class Augmenter:
             filename = fn.split('_')[0]
             samples = len([item for item in os.listdir(f'{self.path_styles}/{style}/{filename}')])
             # add samples to self.samples
-            self.samples.append((cv2.resize(im, (70, 70)), self.class_labels_styles[style]))
+            # self.samples.append((cv2.resize(im, (70, 70)), self.class_labels_styles[style]))
             return im, filename, samples
         else:
             sys.exit('No dataset specified')
@@ -273,6 +277,10 @@ class Augmenter:
         augmented = self.affine(augmented)
         return augmented
 
+    ''''
+    Check if termination condition has been reached
+    '''
+
     def check_break(self, augmentations, cnt, cycle, samples):
         samples += 1
         if cnt == len(augmentations):
@@ -283,6 +291,10 @@ class Augmenter:
         cnt += 1
 
         return False, augmentations, cnt, cycle, samples
+
+    '''
+    Perform some final alterations to the image
+    '''
 
     def finalize_augmented_image(self, augmentation, image):
         augmented = augmentation(image=image)
@@ -307,13 +319,15 @@ class Augmenter:
                          self.erode_elastic_affine]
 
         if self.dataset is 'habbakuk':
-            self.load_monkbrill()  # for habbakuk we need to load the samples separately like this
+            # self.load_monkbrill()  # for habbakuk we need to load the samples separately like this
 
             if not os.path.exists(f'augmented_habbakuk/'):
                 os.mkdir(f'augmented_habbakuk/')
-
+            a = 0
             for item in self.images:
                 image, name, samples = item
+                if not self.supplement_original_samples:
+                    samples = 0
                 cnt = 1
                 cycle = 1
                 for augmentation in itertools.cycle(augmentations):
@@ -339,38 +353,52 @@ class Augmenter:
 
             if not os.path.exists(f'augmented_styles/'):
                 os.mkdir(f'augmented_styles/')
+            old_name = None
+            char_batch = []
             for style in self.images:
-
+                licycle = itertools.cycle(augmentations)
                 for item in self.images[style]:
                     image, name, samples = item
-                    cnt = 1
-                    cycle = 1
-                    print(name)
-                    for augmentation in itertools.cycle(augmentations):
-                        # augment, resize, invert, create name
-                        augmented, aug_name = self.finalize_augmented_image(augmentation, image)
+                    if not self.supplement_original_samples:
+                        samples = 0
+                    if name == old_name or len(char_batch) == 0:
+                        char_batch.append(item)
+                        old_name = name
+                    else:
+                        # augment one batch
+                        cnt = 1
+                        cycle = 1
+                        stop = False
+                        while not stop:
+                            augmentation = next(licycle)
+                            image, name, _ = random.choice(char_batch)
 
-                        # create dir if not exists
-                        if not os.path.exists(f'augmented_styles/{style}/{name}'):
-                            os.makedirs(f'augmented_styles/{style}/{name}')
-                        cv2.imwrite(f'augmented_styles/{style}/{name}/{name}_{aug_name}_{cycle}.png', augmented)
+                            # augment, resize, invert, create name
+                            augmented, aug_name = self.finalize_augmented_image(augmentation, image)
+                            # create dir if not exists
+                            if not os.path.exists(f'augmented_styles/{style}/{name}'):
+                                os.makedirs(f'augmented_styles/{style}/{name}')
+                            cv2.imwrite(f'augmented_styles/{style}/{name}/{name}_{aug_name}_{cycle}.png', augmented)
 
-                        # add sample to the dataset
-                        self.samples.append((augmented, self.class_labels_styles[style]))
+                            # add sample to the dataset
+                            self.samples.append(
+                                (augmented, self.class_labels_styles[style], self.class_labels_chars[name]))
 
-                        print(f'style: {style}, samples: {samples}, name: {name}')
-                        self.clear()
-                        # update variables and check termination criteria
-                        stop, augmentations, cnt, cycle, samples = self.check_break(augmentations, cnt, cycle, samples)
-                        if stop:
-                            break
+                            print(f'style: {style}, samples: {samples}, name: {name}')
+                            self.clear()
+
+                            stop, augmentations, cnt, cycle, samples = self.check_break(augmentations, cnt, cycle,
+                                                                                        samples)
+                            if stop:
+                                char_batch = []
+                                break
 
         print("All samples generated successfully")
         return self.samples
 
 
 def main():
-    A = Augmenter(dataset='habbakuk', samples_per_char=300)
+    A = Augmenter(dataset='styles', samples_per_char=100, supplement_original_samples=False)
     dataset = A.augment()  # dataset is a list filled with tuples: (image, class_label)
 
 
