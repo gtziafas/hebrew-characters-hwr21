@@ -1,8 +1,7 @@
 from ..types import *
 from ..utils import crop_boxes_fixed, pad_with_frame
 from ..data.styles_dataset import StylesDataset
-from ..models.cnn import default_cnn_styles
-from ..models.loss import FuzzyLoss, TaylorSoftmax
+from ..models.cnn import default_cnn_styles, concat_cnn_styles, collate_concat
 from ..models.training import Trainer, Metrics
 
 import torch
@@ -23,10 +22,10 @@ if torch.cuda.is_available():
     torch.cuda.manual_seed_all(14)
 
 
-def collate(device: str, with_padding: Maybe[Tuple[int, int]]=None) -> Callable[[List[Character]], Tuple[Tensor, Tensor]]:
+def collate(device: str, with_padding: Maybe[Tuple[int, int]] = None) -> Callable[[List[Character]], Tuple[Tensor, Tensor]]:
     
     def _collate(batch: List[Character]) -> Tuple[Tensor, Tensor]:
-        imgs, labels = zip(*[(s.image, s.style) for s in batch])
+        imgs, styles = zip(*[(s.image, s.style) for s in batch])
     
         # pad to equal size if desired
         if with_padding is not None:
@@ -34,11 +33,10 @@ def collate(device: str, with_padding: Maybe[Tuple[int, int]]=None) -> Callable[
 
         # normalize to [0,1], tensorize, send to device, add channel dimension and stack
         imgs = torch.stack([torch.tensor(img / 0xff, dtype=floatt, device=device) for img in imgs], dim=0).unsqueeze(1)
-        labels = torch.stack([torch.tensor(label, dtype=longt, device=device) for label in labels], dim=0)
-        return imgs, labels
+        styles = torch.stack([torch.tensor(label, dtype=longt, device=device) for label in styles], dim=0)
+        return imgs, styles
 
     return _collate
-
 
 
 def main(data_root: str,
@@ -53,18 +51,22 @@ def main(data_root: str,
          save_path: Maybe[str],
          load_path: Maybe[str],
          checkpoint: Maybe[str],
-         print_log: bool
+         print_log: bool,
+         concat: bool
         ):
+
+    collator = collate_concat(device) if concat else collate(device)
+    make_model = concat_cnn_styles if concat else default_cnn_styles
 
     # an independent function to init a model and train over some epochs for a given train-dev(-test) split
     def train(train_ds: List[Character], dev_ds: List[Character], test_ds: Maybe[List[Character]]=None) -> Metrics:
-        train_dl = DataLoader(train_ds, shuffle=True, batch_size=batch_size, worker_init_fn=SEED, collate_fn=collate(device))
-        dev_dl = DataLoader(dev_ds, shuffle=False, batch_size=batch_size, worker_init_fn=SEED, collate_fn=collate(device))
+        train_dl = DataLoader(train_ds, shuffle=True, batch_size=batch_size, worker_init_fn=SEED, collate_fn=collator)
+        dev_dl = DataLoader(dev_ds, shuffle=False, batch_size=batch_size, worker_init_fn=SEED, collate_fn=collator)
 
         # optionally test in separate split, given from a path directory as argument
-        test_dl = DataLoader(test_ds, shuffle=False, batch_size=batch_size, collate_fn=collate(device)) if test_ds is not None else None
+        test_dl = DataLoader(test_ds, shuffle=False, batch_size=batch_size, collate_fn=collator) if test_ds is not None else None
 
-        model = default_cnn_styles().to(device) 
+        model = make_model().to(device) 
         if load_path is not None:
             model.load_pretrained(load_path)
         optim = AdamW(model.parameters(), lr=lr, weight_decay=wd)
@@ -131,6 +133,7 @@ if __name__ == "__main__":
     parser.add_argument('--print_log', action='store_true', help='print training logs', default=False)
     parser.add_argument('-l', '--load_path', help='full path to load pretrained model (default no load)', type=str, default=None)
     parser.add_argument('-chp', '--checkpoint', help='whether to use given file to load data', type=str, default=None)
+    parser.add_argument('--concat', action='store_true', help='concatenate character labels for prediction', default=False)
     
     kwargs = vars(parser.parse_args())
     main(**kwargs)

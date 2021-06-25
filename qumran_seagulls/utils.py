@@ -167,3 +167,45 @@ def resize(desired_shape: Tuple[int, int]) -> Callable[[List[array]], List[array
         return imgs
 
     return _resize
+
+
+#####  I/O utils #####
+from random import sample 
+from math import ceil
+from tqdm import tqdm
+import subprocess
+import os
+
+
+def split_train_dev_test(data: List[Any], sizes: Tuple[float, ...], dev_thresh: Maybe[int]=None, 
+                         test_thresh: Maybe[int]=None):
+    # thresholds are minimum number of dev/test samples per class
+    dev_thresh = 0 if dev_thresh is None else dev_thresh
+    test_thresh = 0 if test_thresh is None else test_thresh
+    train_size, dev_size, test_size = [len(data) * s for s in sizes]
+    dev_size = max(dev_thresh, ceil(dev_size))
+    test_size = max(test_thresh, ceil(test_size))
+
+    train = sample(data, len(data) - dev_size - test_size)
+    rest = [sample for sample in data if sample not in train]
+    dev = sample(rest, dev_size)
+    test = [sample for sample in rest if sample not in dev]
+    return train, dev, test
+
+
+def create_splits_from_dir(root: str, folder: str, out_dir: str, file_ext: str = 'pgm', **kwargs):
+    def _do_split(split: str, files: List[str]):
+        if not os.path.isdir(os.path.join(out_dir, split)):
+            os.mkdir(os.path.join(out_dir, split))
+        if not os.path.isdir(os.path.join(out_dir, split, folder)):
+            os.mkdir(os.path.join(out_dir, split, folder))
+
+        for f in tqdm(files):
+            name = f.split('/')[-1]
+            subprocess.call(['cp', f, os.path.join(out_dir, split, folder, name)])
+
+    fs = [os.path.join(root, folder, f) for f in os.listdir(os.path.join(root, folder)) if f.endswith(file_ext)]
+    train, dev, test = split_train_dev_test(fs, **kwargs)
+    _do_split('train', train)
+    _do_split('dev', dev)
+    _do_split('test', test)
