@@ -35,11 +35,12 @@ class CNNFeatures(nn.Module):
 
 class BaselineCNN(nn.Module):
     def __init__(self, num_classes: int, dropout_rates: List[float], inp_shape: Tuple[int, int], num_features: int,
-                 with_preproc: Maybe[Callable[[List[array]], List[array]]] = None):
+                 with_preproc: Maybe[Callable[[List[array]], List[array]]] = None,
+                 conv_kernels: List[int] = [3, 3, 3], pool_kernels: List[int] = [3, 2, 2]):
         super().__init__()
         self.with_preproc = with_preproc
         self.inp_shape = inp_shape
-        self.features = CNNFeatures(num_blocks=3, dropout_rates=dropout_rates, conv_kernels=[3, 3, 3], pool_kernels=[3,2,2])
+        self.features = CNNFeatures(3, dropout_rates, conv_kernels, pool_kernels)
         self.cls = nn.Linear(in_features=num_features, out_features=num_classes)
 
     def forward(self, x: Tensor) -> Tensor:
@@ -69,12 +70,13 @@ class BaselineCNN(nn.Module):
 
 class ConcatCNN(nn.Module):
     def __init__(self, num_classes: int, dropout_rates: List[float], inp_shape: Tuple[int, int], num_features: int,
-                 with_preproc: Maybe[Callable[[List[array]], List[array]]] = None, num_char_labels: int = 27):
+                 with_preproc: Maybe[Callable[[List[array]], List[array]]] = None, num_char_labels: int = 27,
+                 conv_kernels: List[int] = [3, 3, 3], pool_kernels: List[int] = [3, 2, 2]):
         super().__init__()
         self.num_char_labels = num_char_labels
         self.with_preproc = with_preproc
         self.inp_shape = inp_shape
-        self.features = CNNFeatures(num_blocks=3, dropout_rates=dropout_rates, conv_kernels=[3, 3, 3], pool_kernels=[3,2,2])
+        self.features = CNNFeatures(3, dropout_rates, conv_kernels, pool_kernels)
         self.cls = nn.Linear(in_features=num_features + num_char_labels, out_features=num_classes)
 
     def forward(self, inputs: Tuple[Tensor, Tensor]) -> Tensor:
@@ -105,6 +107,47 @@ class ConcatCNN(nn.Module):
     def load_pretrained(self, path: str):
         checkpoint = load(path)
         self.load_state_dict(checkpoint)
+
+
+class MultiTaskCNN(nn.Module):
+    def __init__(self, num_style_labels: int, dropout_rates: List[float], inp_shape: Tuple[int, int], num_features: int,
+                 with_preproc: Maybe[Callable[[List[array]], List[array]]] = None, num_char_labels: int = 27,
+                 conv_kernels: List[int] = [3, 3, 3], pool_kernels: List[int] = [3, 2, 2]):
+        super().__init__()
+        self.num_char_labels = num_char_labels
+        self.with_preproc = with_preproc
+        self.inp_shape = inp_shape
+        self.features = CNNFeatures(3, dropout_rates, conv_kernels, pool_kernels)
+        self.label_cls = nn.Linear(in_features=num_features, out_features=num_char_labels)
+        self.style_cls = nn.Linear(in_features=num_features, out_features=num_style_labels)
+
+    def forward(self, x: Tensor) -> Tensor:
+        # x: B x 1 x H x W
+        x = self.features(x)
+        return self.label_cls(x), self.style_cls(x)
+
+    @no_grad()
+    def predict_scores(self, imgs: List[array], device: str='cpu') -> Tuple[Tensor, Tensor]:
+        self.eval()
+        imgs = self.with_preproc(list(imgs)) if self.with_preproc is not None else imgs
+        tensorized = stack([tensor(img / 0xff, dtype=floatt, device=device) for img in imgs])
+        return self.forward(tensorized.unsqueeze(1))
+        
+    @no_grad()
+    def predict(self, imgs: List[array], device: str='cpu') -> List[Tuple[str, str]]:
+        label_preds, style_preds = self.predict_scores(imgs, labels, device)
+        label_preds = label_preds.argmax(-1).cpu().tolist()
+        style_preds = style_preds.argmax(-1).cpu().tolist()
+        return [(LABEL_MAP[label], STYLE_MAP[style]) for label, styles in zip(label_preds, style_preds)]
+
+    def load_pretrained(self, path: str):
+        checkpoint = load(path)
+        self.load_state_dict(checkpoint)
+
+    def load_char_model(self, path: str):
+        checkpoint = load(path)
+        self.features.load_state_dict(checkpoint['features'])
+        self.label_cls.load_state_dict(checkpoint['cls'])
 
 
 def collate(device: str, with_padding: Maybe[Tuple[int, int]] = None) -> Callable[[List[Character]], Tuple[Tensor, Tensor]]:
@@ -150,9 +193,13 @@ def monkbrill_with_between_class() -> BaselineCNN:
 
 
 def default_cnn_styles() -> BaselineCNN:
-    return BaselineCNN(num_classes=3, dropout_rates=[0., 0.1, 0.5], inp_shape=(75, 75), num_features=1024,
+    return BaselineCNN(num_classes=3, dropout_rates=[0., 0.1, 0.33], inp_shape=(75, 75), num_features=1024,
                        with_preproc=crop_boxes_fixed((75, 75)))
 
 def concat_cnn_styles() -> ConcatCNN:
     return ConcatCNN(num_classes=3, dropout_rates=[0., 0.1, 0.75], inp_shape=(75, 75), num_features=1024,
-                       with_preproc=crop_boxes_fixed((75, 75)))
+                       with_preproc=crop_boxes_fixed((75, 75)), num_char_labels=27)
+
+def multitask_cnn() -> MultiTaskCNN:
+    return MultiTaskCNN(num_style_labels=3, dropout_rates=[0., 0.1, 0.75], inp_shape=(75, 75), num_features=1024,
+                       with_preproc=crop_boxes_fixed((75, 75)), num_char_labels=27)
