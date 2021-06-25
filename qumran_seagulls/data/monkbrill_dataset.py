@@ -1,5 +1,5 @@
 from ..types import *
-from ..utils import show, filter_large
+from ..utils import show, crop_boxes_fixed
 
 from torchvision.datasets import ImageFolder
 
@@ -31,5 +31,5 @@ class MonkbrillDataset(ABC):
         show(char.image, legend=char.label_str)
 
 
-def get_monkbrill():
-    return MonkbrillDataset('./data/monkbrill', with_preproc=filter_large((75, 75)))
+def get_monkbrill_dataset():
+    return MonkbrillDataset('./data/monkbrill', with_preproc=crop_boxes_fixed((75, 75)))

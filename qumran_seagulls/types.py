@@ -70,7 +70,7 @@ class Box:
     h: int 
 
 
-class Model(ABC):
+class Pipeline(ABC):
 
     def preprocess(self, image: array) -> List[List[List[array]]]:
         # from full image -> lines x words x character images

@@ -2,7 +2,35 @@ from ..types import *
 from ..utils import pad_with_frame, filter_large, crop_boxes_fixed, resize
 
 import torch.nn as nn 
-from torch import tensor, stack, no_grad, load
+from torch import tensor, stack, no_grad, load, cat, zeros
+
+
+class CNNFeatures(nn.Module):
+    def __init__(self, num_blocks: int, dropout_rates: List[float], 
+                 conv_kernels: List[int], pool_kernels: List[int],
+                 input_channels: int = 1):
+        super().__init__()
+        assert num_blocks == len(conv_kernels) == len(pool_kernels) == len(dropout_rates)
+        self.blocks = nn.Sequential(self.block(input_channels, 16, conv_kernels[0], pool_kernels[0], dropout_rates[0]),
+                                    *[self.block(2**(3+i), 2**(4+i), conv_kernels[i], pool_kernels[i], dropout_rates[i])
+                                    for i in range(1, num_blocks)])
+
+    def block(self, 
+              in_channels: int, 
+              out_channels: int, 
+              conv_kernel: int, 
+              pool_kernel: int, 
+              dropout: float = 0., 
+              conv_stride: int = 1
+             ):
+        return nn.Sequential(nn.Conv2d(in_channels, out_channels, kernel_size=conv_kernel, stride=conv_stride),
+                             nn.GELU(),
+                             nn.MaxPool2d(kernel_size=pool_kernel),
+                             nn.Dropout(p=dropout)
+                            ) 
+
+    def forward(self, x: Tensor) -> Tensor:
+        return self.blocks(x).flatten(1) # B x D
 
 
 class BaselineCNN(nn.Module):
@@ -11,31 +39,12 @@ class BaselineCNN(nn.Module):
         super().__init__()
         self.with_preproc = with_preproc
         self.inp_shape = inp_shape
-        self.block1 = self.block(in_channels=1, out_channels=16, conv_kernel=3, pool_kernel=3, dropout=0.) 
-        self.block2 = self.block(in_channels=16, out_channels=32, conv_kernel=3, pool_kernel=2, dropout=dropout_rates[0])
-        self.block3 = self.block(in_channels=32, out_channels=64, conv_kernel=3, pool_kernel=2, dropout=dropout_rates[1])
+        self.features = CNNFeatures(num_blocks=3, dropout_rates=dropout_rates, conv_kernels=[3, 3, 3], pool_kernels=[3,2,2])
         self.cls = nn.Linear(in_features=num_features, out_features=num_classes)
-
-    def block(self, 
-              in_channels: int, 
-              out_channels: int, 
-              conv_kernel: int, 
-              pool_kernel: int, 
-              dropout: float, 
-              conv_stride: int=1
-             ):
-        return nn.Sequential(nn.Conv2d(in_channels, out_channels, kernel_size=conv_kernel, stride=conv_stride),
-                             nn.GELU(),
-                             nn.MaxPool2d(kernel_size=pool_kernel),
-                             nn.Dropout(p=dropout)
-                            )
 
     def forward(self, x: Tensor) -> Tensor:
         # x: B x 1 x H x W
-        x = self.block1(x)
-        x = self.block2(x)
-        x = self.block3(x)
-        x = x.flatten(1)
+        x = self.features(x)
         return self.cls(x)
 
     @no_grad()
@@ -51,6 +60,46 @@ class BaselineCNN(nn.Module):
     @no_grad()
     def predict(self, imgs: List[array], device: str='cpu') -> List[str]:
         predictions = self.predict_scores(imgs, device).argmax(-1).cpu()
+        return [LABEL_MAP[label] for label in predictions]
+
+    def load_pretrained(self, path: str):
+        checkpoint = load(path)
+        self.load_state_dict(checkpoint)
+
+
+class ConcatCNN(nn.Module):
+    def __init__(self, num_classes: int, dropout_rates: List[float], inp_shape: Tuple[int, int], num_features: int,
+                 with_preproc: Maybe[Callable[[List[array]], List[array]]] = None, num_char_labels: int = 27):
+        super().__init__()
+        self.num_char_labels = num_char_labels
+        self.with_preproc = with_preproc
+        self.inp_shape = inp_shape
+        self.features = CNNFeatures(num_blocks=3, dropout_rates=dropout_rates, conv_kernels=[3, 3, 3], pool_kernels=[3,2,2])
+        self.cls = nn.Linear(in_features=num_features + num_char_labels, out_features=num_classes)
+
+    def forward(self, inputs: Tuple[Tensor, Tensor]) -> Tensor:
+        # x: B x 1 x H x W,     y: B x K
+        x, y = inputs
+        x = self.features(x)
+        y_onehot = zeros(y.shape[0], self.num_char_labels, device=x.device)
+        y_onehot.scatter_(1, y.unsqueeze(1), 1)
+        x = cat((x, y_onehot), dim=-1)
+        return self.cls(x)
+
+    @no_grad()
+    def predict_scores(self, imgs: List[array], labels: List[int], device: str='cpu') -> Tensor:
+        self.eval()
+        # filtered = filter_large(self.inp_shape)(imgs)
+        # padded = pad_with_frame(filtered, self.inp_shape)
+        imgs = self.with_preproc(list(imgs)) if self.with_preproc is not None else imgs
+        tensorized = stack([tensor(img / 0xff, dtype=floatt, device=device) for img in imgs])
+        labels = stack([tensor(y, dtype=longt, device=device) for y in labels])
+        scores = self.forward((tensorized.unsqueeze(1), labels))
+        return scores
+
+    @no_grad()
+    def predict(self, imgs: List[array], labels: List[int], device: str='cpu') -> List[str]:
+        predictions = self.predict_scores(imgs, labels, device).argmax(-1).cpu()
         return [LABEL_MAP[label] for label in predictions]
 
     def load_pretrained(self, path: str):
@@ -75,8 +124,23 @@ def collate(device: str, with_padding: Maybe[Tuple[int, int]] = None) -> Callabl
     return _collate
 
 
+def collate_concat(device: str, with_padding: Maybe[Tuple[int, int]] = None
+    ) -> Callable[[List[Character]], Tuple[Tuple[Tensor, Tensor], Tensor]]:
+    
+    def _collate(batch: List[Character]) -> Tuple[Tuple[Tensor, Tensor], Tensor]:
+        imgs, labels, styles = zip(*[(s.image, s.label, s.style) for s in batch])
+        if with_padding is not None:
+            imgs = pad_with_frame(imgs, desired_shape=with_padding)
+        imgs = stack([tensor(img / 0xff, dtype=floatt, device=device) for img in imgs]).unsqueeze(1)
+        labels = stack([tensor(label, dtype=longt, device=device) for label in labels])
+        styles = stack([tensor(style, dtype=longt, device=device) for style in styles])
+        return (imgs, labels), styles
+
+    return _collate
+
+
 def default_cnn_monkbrill() -> BaselineCNN:
-    return BaselineCNN(num_classes=27, dropout_rates=[0.1, 0.5], inp_shape=(75, 75), num_features=1024,
+    return BaselineCNN(num_classes=27, dropout_rates=[0., 0.1, 0.5], inp_shape=(75, 75), num_features=1024,
                        with_preproc=crop_boxes_fixed((75, 75)))
 
 
@@ -86,5 +150,9 @@ def monkbrill_with_between_class() -> BaselineCNN:
 
 
 def default_cnn_styles() -> BaselineCNN:
-    return BaselineCNN(num_classes=3, dropout_rates=[0.1, 0.5], inp_shape=(75, 75), num_features=1024,
+    return BaselineCNN(num_classes=3, dropout_rates=[0., 0.1, 0.5], inp_shape=(75, 75), num_features=1024,
+                       with_preproc=crop_boxes_fixed((75, 75)))
+
+def concat_cnn_styles() -> ConcatCNN:
+    return ConcatCNN(num_classes=3, dropout_rates=[0., 0.1, 0.75], inp_shape=(75, 75), num_features=1024,
                        with_preproc=crop_boxes_fixed((75, 75)))
