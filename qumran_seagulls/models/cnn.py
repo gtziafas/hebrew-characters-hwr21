@@ -188,7 +188,7 @@ def default_cnn_monkbrill() -> BaselineCNN:
 
 
 def monkbrill_with_between_class() -> BaselineCNN:
-    return BaselineCNN(num_classes=28, dropout_rates=[0.1, 0.5], inp_shape=(75, 75), num_features=1024,
+    return BaselineCNN(num_classes=28, dropout_rates=[0., 0.1, 0.5], inp_shape=(75, 75), num_features=1024,
                        with_preproc=resize((75, 75)))
 
 
