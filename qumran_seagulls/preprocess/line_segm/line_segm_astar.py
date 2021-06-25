@@ -135,7 +135,7 @@ def segment_img(image):
     all_paths = []
     path = []
 
-    print(f"Identified {len(minima)} lines. Image width: {w}. Computing paths...")
+    print(f"Identified {len(minima)} lines. Image width: {w}. Computing segmentation paths...")
 
     # adding extra line in path
     for i in range(image.shape[1]):
