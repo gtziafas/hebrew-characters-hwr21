@@ -1,11 +1,16 @@
-import numpy as np
-import matplotlib.pyplot as plt
-import cv2
-from PIL import Image, ImageDraw
 import os
 
-from qumran_seagulls.types import *
+import cv2
+import matplotlib.pyplot as plt
+import numpy as np
+import torch
+from PIL import Image, ImageDraw
+from scipy import interpolate
+
+from qumran_seagulls.models.cnn import monkbrill_with_between_class
+from qumran_seagulls.preprocess.char_segm.char_segm_sliding_window_classifier import get_sliding_window_probs
 from qumran_seagulls.preprocess.shared_astar_funcs.persistence1d import RunPersistence
+from qumran_seagulls.types import *
 
 
 def get_sorted_minima(image: np.array, min_persistence, axis) -> List[int]:
@@ -122,3 +127,57 @@ def crop_lines(image: np.ndarray, paths: List[List[Tuple[int]]], debug: bool):
         cropped_lines.append(dst)
 
     return cropped_lines
+
+
+def get_sorted_minima_with_probs(image: np.array, min_persistence, axis, debug=False) -> List[int]:
+    """
+    Gets the sorted minima of the histogram, but the histogram is obtained by mixing with the ink projection
+    with the probability that the current window is right on a character.
+    This function is only usable for character segmentation.
+    :param image:
+    :param min_persistence:
+    :param axis:
+    :param debug:
+    :return:
+    """
+
+    h, w = image.shape
+    histogram = np.sum(image, axis=axis)
+
+    saved_cnn = monkbrill_with_between_class()
+    saved_cnn.load_state_dict(torch.load("data/saved_models/segmenter.pt"))
+    probs = get_sliding_window_probs(image*255, cnn=saved_cnn, step_size=5, asc_desc_offset=(0, h))
+
+    # Discard the first row (window center position) and the last row (probability of "between" class)
+    # to get the max probability that the window is on a character
+    max_probs = np.max(probs[1:-1, :], axis=0)
+
+    # Interpolate to get values between the positions of the sliding windows
+    x_interp_range = np.arange(0, w, step=1, dtype=int)
+    max_probs_interp_function = interpolate.interp1d(probs[0, :], max_probs, fill_value=(max_probs[0], max_probs[-1]), bounds_error=False)
+    max_probs_interp = max_probs_interp_function(x_interp_range)
+
+    # Scale up to have the same max value as the histogram
+    height_scale_function = interpolate.interp1d([np.amin(max_probs_interp), np.amax(max_probs_interp)], [0, np.amax(histogram)])
+    max_probs_interp = height_scale_function(max_probs_interp)
+
+    # Mix the histogram with the probabilities
+    mixed_histogram = 2 * np.maximum(histogram, max_probs_interp)
+
+    extrema = RunPersistence(mixed_histogram)
+    minima = extrema[0::2]  # odd elements are minima
+    filtered_minima = [t[0] for t in minima if t[1] > min_persistence]
+    sorted_minima = sorted(filtered_minima)
+
+    print(f"sortedm {sorted_minima}")
+    print(f"")
+
+    if debug:
+        plt.imshow(image)
+        plt.plot(h * 2 - histogram, label="Ink proj")
+        plt.plot(h * 2 - max_probs_interp, label="max_probs_interp")
+        plt.plot(h * 2 - mixed_histogram, label="Mix ink proj with probs")
+        plt.plot(sorted_minima, h*2 - mixed_histogram[sorted_minima], "x", c="red")
+        plt.legend()
+
+    return sorted_minima
