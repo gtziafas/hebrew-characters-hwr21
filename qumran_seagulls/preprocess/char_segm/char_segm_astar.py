@@ -3,10 +3,10 @@ from tqdm import tqdm  # progress bar
 
 from qumran_seagulls.preprocess.shared_astar_funcs.astar_funcs import *
 from qumran_seagulls.types import *
-
+from qumran_seagulls.preprocess.shared_astar_funcs.astar_funcs import get_sorted_minima_with_probs
 
 min_persistence = 30
-debug = False
+debug = True
 
 
 def astar(image, start, end, avg_dist):
@@ -136,7 +136,7 @@ def astar(image, start, end, avg_dist):
 
 def segment_img(image):
     h, w = np.shape(image)
-    minima = get_sorted_minima(image, min_persistence=min_persistence, axis=0)
+    minima = get_sorted_minima_with_probs(image, min_persistence=min_persistence, axis=0, debug=debug)
     all_paths = []
     path = []
 
@@ -168,7 +168,7 @@ def main(argv):
     if debug:
         draw_lines(example_img_path, paths, dirname="extracted_char")
         plot_lines(example_img, paths)
-    cropped_lines = crop_lines(example_img, paths, debug=debug)
+    cropped_lines = crop_lines(example_img, paths, debug=False)
     cropped_lines_dir_path = os.path.splitext('data/extracted_char/' + os.path.split(example_img_path)[1])[0]
 
     if not os.path.exists(cropped_lines_dir_path):
