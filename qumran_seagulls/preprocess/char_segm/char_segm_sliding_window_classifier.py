@@ -63,6 +63,52 @@ def get_sliding_window_probs(img: np.ndarray, cnn: BaselineCNN, step_size: int =
     return predictions
 
 
+def get_sliding_window_probs_with_cropping(img: np.ndarray, cnn: BaselineCNN, step_size: int = 10) -> np.ndarray:
+    h, w = np.shape(img)
+    # N_CLASSES + 1 because we will use the first row for the window position
+    predictions = np.zeros((N_CLASSES + 1, int(w / step_size) + 1))
+
+    np.set_printoptions(edgeitems=30, linewidth=100000,
+                        formatter=dict(float=lambda x: "%+.3f" % x))
+
+    # starting from the right, we go left, until we hit the last square window
+    for window_right_edge in range(w, h, -step_size):
+
+        # crop a square window with size (window_bottom_ege - window_top_edge)
+        window = img[0:h,
+                     window_right_edge - h:window_right_edge]  # crop the window
+
+        # project this square window vertically and horizontally
+        histogram_v = np.sum(window, axis=0)
+        histogram_h = np.sum(window, axis=1)
+
+        # get the medians of the projections (center of gravity)
+        median_v = np.median(histogram_v)
+        median_h = np.median(histogram_h)
+
+        # window position, this is the x position needed for the plot, it represents the center of the window
+        predictions[0, int(window_right_edge / step_size)] = median_h
+
+        box_top = median_v - 75/2
+        box_bottom = median_v + 75/2
+        box_left = median_h - 75/2
+        box_right = median_h + 75/2
+
+        window = window[box_top:box_bottom, box_left:box_right]
+
+        y = cnn.predict_scores(imgs=[window], device='cpu').softmax(dim=-1)
+        # print(y)
+        predictions[1:, int(window_right_edge / step_size)] = y.detach()
+
+    # delete columns that contain all 0s (first few cols on the left)
+    idx = np.argwhere(np.all(predictions[..., :] == 0, axis=0))
+    predictions = np.delete(predictions, idx, axis=1)
+
+    # print(f"predictions matrix:\n{predictions}")
+
+    return predictions
+
+
 def plot_sliding_window(line_img: np.ndarray, cnn: BaselineCNN, step_size: int = 10,
                         asc_desc_offset: Tuple[int, int] = (0, 0)):
     """
