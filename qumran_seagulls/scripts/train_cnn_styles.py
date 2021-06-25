@@ -1,7 +1,7 @@
 from ..types import *
+from ..models.cnn import *
 from ..utils import crop_boxes_fixed, pad_with_frame
 from ..data.styles_dataset import StylesDataset
-from ..models.cnn import default_cnn_styles, concat_cnn_styles, collate_concat
 from ..models.training import Trainer, Metrics
 
 import torch
@@ -52,11 +52,13 @@ def main(data_root: str,
          load_path: Maybe[str],
          checkpoint: Maybe[str],
          print_log: bool,
-         concat: bool
+         concat: bool,
+         multi: bool
         ):
 
-    collator = collate_concat(device) if concat else collate(device)
-    make_model = concat_cnn_styles if concat else default_cnn_styles
+    collator = collate_concat(device) if concat or multi else collate(device)
+    make_model = concat_cnn_styles if concat else multitask_cnn if multi else default_cnn_styles
+    target_metric = 'accuracy' if not multi else 'style_accuracy'
 
     # an independent function to init a model and train over some epochs for a given train-dev(-test) split
     def train(train_ds: List[Character], dev_ds: List[Character], test_ds: Maybe[List[Character]]=None) -> Metrics:
@@ -68,11 +70,16 @@ def main(data_root: str,
 
         model = make_model().to(device) 
         if load_path is not None:
-            model.load_pretrained(load_path)
+            if not multi:
+                model.load_pretrained(load_path)
+            else:
+                model.load_char_model(load_path)
+                
         optim = AdamW(model.parameters(), lr=lr, weight_decay=wd)
         criterion = CrossEntropyLoss(reduction='mean')
         #criterion = FuzzyLoss(num_classes=27, mass_redistribution=0.3)#, softmax=TaylorSoftmax(order=4))
-        trainer = Trainer(model, (train_dl, dev_dl, test_dl), optim, criterion, target_metric="accuracy", early_stopping=early_stopping)
+        trainer = Trainer(model, (train_dl, dev_dl, test_dl), optim, criterion, target_metric=target_metric, 
+                early_stopping=early_stopping, multitask=multi)
         
         return trainer.iterate(num_epochs, with_save=save_path, print_log=print_log)
 
@@ -113,7 +120,7 @@ def main(data_root: str,
             dev_ds = [s for i, s in enumerate(ds) if i in dev_idces]
             best = train(train_ds, dev_ds, test_ds)
             print(f'Results {kfold}-fold, iteration {iteration+1}: {best}')
-            accu += best['accuracy']
+            accu += best[target_metric]
         print(f'Average accuracy {kfold}-fold: {accu/kfold}')
 
 
@@ -134,6 +141,7 @@ if __name__ == "__main__":
     parser.add_argument('-l', '--load_path', help='full path to load pretrained model (default no load)', type=str, default=None)
     parser.add_argument('-chp', '--checkpoint', help='whether to use given file to load data', type=str, default=None)
     parser.add_argument('--concat', action='store_true', help='concatenate character labels for prediction', default=False)
+    parser.add_argument('--multi', action='store_true', help='multi-task cnn', default=False)
     
     kwargs = vars(parser.parse_args())
     main(**kwargs)
