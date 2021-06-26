@@ -3,7 +3,6 @@ from tqdm import tqdm  # progress bar
 
 from qumran_seagulls.preprocess.shared_astar_funcs.astar_funcs import *
 from qumran_seagulls.types import *
-from qumran_seagulls.utils import thresh_invert
 
 
 min_persistence = 170
@@ -162,7 +161,7 @@ def segment_img(image):
 
 def main(image):
     #example_img_path = argv
-    example_img = thresh_invert(image)
+    example_img = (255-image)/255
     paths = segment_img(example_img)
     if debug:
         draw_lines(example_img_path, paths, dirname="extracted_images")
