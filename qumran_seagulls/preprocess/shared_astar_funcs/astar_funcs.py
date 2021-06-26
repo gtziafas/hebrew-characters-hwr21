@@ -8,7 +8,8 @@ from PIL import Image, ImageDraw
 from scipy import interpolate
 
 from qumran_seagulls.models.cnn import monkbrill_with_between_class
-from qumran_seagulls.preprocess.char_segm.char_segm_sliding_window_classifier import get_sliding_window_probs
+from qumran_seagulls.preprocess.char_segm.char_segm_sliding_window_classifier import get_sliding_window_probs, \
+    get_sliding_window_probs_with_cropping
 from qumran_seagulls.preprocess.shared_astar_funcs.persistence1d import RunPersistence
 from qumran_seagulls.types import *
 
@@ -146,7 +147,7 @@ def get_sorted_minima_with_probs(image: np.array, min_persistence, axis, debug=F
 
     saved_cnn = monkbrill_with_between_class()
     saved_cnn.load_state_dict(torch.load("data/saved_models/segmenter.pt"))
-    probs = get_sliding_window_probs(image*255, cnn=saved_cnn, step_size=5, asc_desc_offset=(0, h))
+    probs = get_sliding_window_probs_with_cropping(image*255, cnn=saved_cnn, step_size=5)
 
     # Discard the first row (window center position) and the last row (probability of "between" class)
     # to get the max probability that the window is on a character
@@ -162,7 +163,7 @@ def get_sorted_minima_with_probs(image: np.array, min_persistence, axis, debug=F
     max_probs_interp = height_scale_function(max_probs_interp)
 
     # Mix the histogram with the probabilities
-    mixed_histogram = 2 * np.maximum(histogram, max_probs_interp)
+    mixed_histogram = histogram * 0.75 + max_probs_interp * 0.75
 
     extrema = RunPersistence(mixed_histogram)
     minima = extrema[0::2]  # odd elements are minima
@@ -174,9 +175,11 @@ def get_sorted_minima_with_probs(image: np.array, min_persistence, axis, debug=F
 
     if debug:
         plt.imshow(image)
+        plt.plot(probs[0, :], h * 2 - 100 * max_probs, label="max_probs_interp")
+        plt.plot(probs[0, :], h * 2 - 100 * max_probs, ".", label="max_probs_interp")
         plt.plot(h * 2 - histogram, label="Ink proj")
-        plt.plot(h * 2 - max_probs_interp, label="max_probs_interp")
-        plt.plot(h * 2 - mixed_histogram, label="Mix ink proj with probs")
+        # plt.plot(h * 2 - max_probs_interp, label="max_probs_interp")
+        # plt.plot(h * 2 - mixed_histogram, label="Mix ink proj with probs")
         plt.plot(sorted_minima, h*2 - mixed_histogram[sorted_minima], "x", c="red")
         plt.legend()
 
