@@ -5,9 +5,12 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 from typing import *
+
+from matplotlib.patches import Rectangle
+
 from qumran_seagulls.models.cnn import BaselineCNN, monkbrill_with_between_class
 from qumran_seagulls.preprocess.shared_astar_funcs.persistence1d import RunPersistence
-from scipy.ndimage import gaussian_filter1d
+from scipy.ndimage import gaussian_filter1d, center_of_mass
 
 CNN_PATH = "data/saved_models/segmenter.pt"
 N_CLASSES = 28  # I think? Why is it so hard to get the size of the output without running the CNN
@@ -15,7 +18,7 @@ input_dim = (75, 75)  # same
 show_max = True  # show only the max prob in each point
 min_persistence = 0.4
 
-debug = False
+debug = True
 
 
 def crop_characters_from_line(line_img: np.ndarray, coords: List[int]) -> List[np.ndarray]:
@@ -63,6 +66,57 @@ def get_sliding_window_probs(img: np.ndarray, cnn: BaselineCNN, step_size: int =
     return predictions
 
 
+def get_sliding_window_probs_with_cropping(img: np.ndarray, cnn: BaselineCNN, step_size: int = 10) -> np.ndarray:
+    h, w = np.shape(img)
+    # N_CLASSES + 1 because we will use the first row for the window position
+    predictions = np.zeros((N_CLASSES + 1, int(w / step_size) + 1))
+
+    np.set_printoptions(edgeitems=30, linewidth=100000,
+                        formatter=dict(float=lambda x: "%+.3f" % x))
+
+    # starting from the right, we go left, until we hit the last square window
+    for window_right_edge in range(w, h, -step_size):
+
+        # crop a square window with size (window_bottom_ege - window_top_edge)
+        window = img[0:h,
+                     window_right_edge - h:window_right_edge]  # crop the window
+
+        # get the center of gravity
+        (cog_y, cog_x) = center_of_mass(window)
+
+
+        cog_x = int(np.clip(cog_x, 40, h-40))
+        cog_y = int(np.clip(cog_y, 40, h-40))
+
+
+        # window position, this is the x position needed for the plot, it represents the center of the window
+        predictions[0, int(window_right_edge / step_size)] = window_right_edge - h + cog_x
+
+        box_top = cog_y - np.ceil(75/2).astype(int)
+        box_bottom = cog_y + np.floor(75/2).astype(int)
+        box_left = cog_x - np.ceil(75/2).astype(int)
+        box_right = cog_x + np.floor(75/2).astype(int)
+
+        # plt.imshow(window)
+        # plt.plot(cog_x, cog_y, "x", c="red")
+        # plt.gca().add_patch(Rectangle((box_left, box_top), 75, 75, linewidth=1, edgecolor='r', facecolor='none'))
+        # plt.show()
+
+        window = window[box_top:box_bottom, box_left:box_right]
+
+        y = cnn.predict_scores(imgs=[window], device='cpu').softmax(dim=-1)
+        # print(y)
+        predictions[1:, int(window_right_edge / step_size)] = y.detach()
+
+    # delete columns that contain all 0s (first few cols on the left)
+    idx = np.argwhere(np.all(predictions[..., :] == 0, axis=0))
+    predictions = np.delete(predictions, idx, axis=1)
+
+    print(f"predictions matrix:\n{predictions}")
+
+    return predictions
+
+
 def plot_sliding_window(line_img: np.ndarray, cnn: BaselineCNN, step_size: int = 10,
                         asc_desc_offset: Tuple[int, int] = (0, 0)):
     """
@@ -74,7 +128,7 @@ def plot_sliding_window(line_img: np.ndarray, cnn: BaselineCNN, step_size: int =
     :return:
     """
     h, w = np.shape(line_img)
-    predictions = get_sliding_window_probs(line_img, cnn, step_size, asc_desc_offset)
+    predictions = get_sliding_window_probs_with_cropping(line_img, cnn, step_size)
 
     # discard 1st row (index) and last row (probability of class "between")
     max_probs = np.max(predictions[1:-1, :], axis=0)
@@ -87,12 +141,15 @@ def plot_sliding_window(line_img: np.ndarray, cnn: BaselineCNN, step_size: int =
     filtered_minima = [t[0] for t in minima if t[1] > min_persistence]
     sorted_minima = sorted(filtered_minima)
     if debug:
-        print(sorted_minima)
+        print(f"sorted_minima {sorted_minima}")
 
     window_size = abs(asc_desc_offset[1] - asc_desc_offset[0])
 
     # Minima are indexed by window number, index by horizontal pixel coordinate instead
-    sorted_minima_pixel_coords = [int(s * step_size + window_size / 2) for s in sorted_minima]
+    sorted_minima_pixel_coords = predictions[0, sorted_minima].astype(int)
+
+    if debug:
+        print(f"sorted_minima_pixel_coords {sorted_minima_pixel_coords}")
 
     # Crop the characters, based on the identified minima
     character_images = crop_characters_from_line(line_img, sorted_minima_pixel_coords)
@@ -193,7 +250,7 @@ def main():
 
     for i, (line_img, asc_desc_offset) in enumerate(zip(line_imgs, asc_desc_offsets)):
         plt.figure(i)
-        char_imgs = plot_sliding_window(line_img, saved_cnn, step_size=15, asc_desc_offset=asc_desc_offset)
+        char_imgs = plot_sliding_window(line_img, saved_cnn, step_size=10, asc_desc_offset=asc_desc_offset)
         for idx, char_img in enumerate(char_imgs):
             print(f"line: {i} char: {idx} shape: {char_img.shape}")
             dest_dir = f"data/chars_cropped/{file_id}/line_{i:02}/"
