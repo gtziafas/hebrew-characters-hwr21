@@ -13,7 +13,7 @@ class StylesDataset(ABC):
         self.dataset = self.load_from_folders(root)
 
     def load_from_folders(self, root: str) -> List[Character]:
-        style_folders = next(os.walk(root))[1]
+        style_folders = sorted(next(os.walk(root))[1])
         style_datasets = [MonkbrillDataset(os.path.join(root, f), self.with_preproc) for f in style_folders]
         style_datasets = [[Character(image=s.image, label=s.label, style=i) for s in ds] for i, ds in enumerate(style_datasets)]
         return sum(style_datasets, [])
