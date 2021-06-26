@@ -48,6 +48,36 @@ class Augmenter:
             'Hasmonean': 1,
             'Herodian': 2
         }
+        self.batch_list = self.class_labels_chars = {
+            'Alef': [],
+            'Ayin': [],
+            'Bet': [],
+            'Dalet': [],
+            'Gimel': [],
+            'He': [],
+            'Het': [],
+            'Kaf': [],
+            'Kaf-final': [],
+            'Lamed': [],
+            'Mem': [],
+            'Mem-medial': [],
+            'Nun-final': [],
+            'Nun-medial': [],
+            'Pe': [],
+            'Pe-final': [],
+            'Qof': [],
+            'Resh': [],
+            'Samekh': [],
+            'Shin': [],
+            'Taw': [],
+            'Tet': [],
+            'Tsadi-final': [],
+            'Tsadi-medial': [],
+            'Waw': [],
+            'Yod': [],
+            'Zayin': []
+
+        }
         # If True create "samples_per_char" amount of samples, else supplement the original samples till
         # 'samples_per_class' amount is reached
         self.supplement_original_samples = supplement_original_samples
@@ -138,6 +168,7 @@ class Augmenter:
             return im, filename, samples
         elif self.dataset is 'monkbrill':
             filename = filename.split('/navis')[0].split('monkbrill/')[1]
+            # filename = filename.split('/Kaf-final-00'[0])
             samples = 0
             try:
                 samples = len([item for item in os.listdir(f'{self.path_monkbril}/{filename}/')])
@@ -323,6 +354,13 @@ class Augmenter:
         aug_name = str(augmentation.__name__).replace('self.', '')
         return augmented, aug_name
 
+    def load_batches(self, char_list):
+
+        for item in char_list:
+            for char in self.batch_list:
+                if item[1] == char:
+                    self.batch_list[char].append(item)
+
     '''
     Augment either habbakuk to supplement the monkbrill dataset, or augment the styles dataset to supplement the
     styles dataset. 
@@ -370,66 +408,25 @@ class Augmenter:
                         break
 
         if self.dataset is 'styles':
-
             if not os.path.exists(f'augmented_styles/'):
                 os.mkdir(f'augmented_styles/')
-            old_name = None
             char_batch = []
             for style in self.images:
                 licycle = itertools.cycle(augmentations)
-                for item in self.images[style]:
-                    image, name, samples = item
-                    if not self.supplement_original_samples:
-                        samples = 0
-                    if name == old_name or len(char_batch) == 0:
-                        char_batch.append(item)
-                        old_name = name
-                    else:
-                        # augment one batch
-                        cnt = 1
-                        cycle = 1
-                        stop = False
-                        while not stop:
-                            augmentation = next(licycle)
-                            image, name, _ = random.choice(char_batch)
-
-                            # augment, resize, invert, create name
-                            augmented, aug_name = self.finalize_augmented_image(augmentation, image)
-                            # create dir if not exists
-                            if not os.path.exists(f'augmented_styles/{style}/{name}'):
-                                os.makedirs(f'augmented_styles/{style}/{name}')
-                            cv2.imwrite(f'augmented_styles/{style}/{name}/{name}_{aug_name}_{cycle}.png', augmented)
-
-                            # add sample to the dataset
-                            self.samples.append(
-                                (augmented, self.class_labels_styles[style], self.class_labels_chars[name]))
-
-                            print(f'style: {style}, samples: {samples}, name: {name}')
-                            self.clear()
-
-                            stop, augmentations, cnt, cycle, samples = self.check_break(augmentations, cnt, cycle,
-                                                                                        samples)
-                            if stop:
-                                char_batch = []
-                                break
-        if self.dataset is 'monkbrill':
-            if not os.path.exists(f'augmented_monkbrill/'):
-                os.mkdir(f'augmented_monkbrill/')
-            old_name = None
-            char_batch = []
-            licycle = itertools.cycle(augmentations)
-            for item in self.images:
-                image, name, samples = item
-                if not self.supplement_original_samples:
-                    samples = 0
-                if name == old_name or len(char_batch) == 0:
-                    char_batch.append(item)
-                    old_name = name
-                else:
-                    # augment one batch
+                self.load_batches(self.images[style])
+                for char in self.batch_list:
                     cnt = 1
                     cycle = 1
                     stop = False
+                    # print(char, len(self.batch_list[char]))
+                    if len(self.batch_list[char]) > 0:
+                        char_batch = self.batch_list[char]
+                    else:
+                        stop = True
+                    if not self.supplement_original_samples:
+                        samples = 0
+                    elif self.supplement_original_samples and not stop:
+                        _, _, samples = random.choice(char_batch)
                     while not stop:
                         augmentation = next(licycle)
                         image, name, _ = random.choice(char_batch)
@@ -437,15 +434,15 @@ class Augmenter:
                         # augment, resize, invert, create name
                         augmented, aug_name = self.finalize_augmented_image(augmentation, image)
                         # create dir if not exists
-                        if not os.path.exists(f'augmented_monkbrill/{name}'):
-                            os.makedirs(f'augmented_monkbrill/{name}')
-                        cv2.imwrite(f'augmented_monkbrill/{name}/{name}_{aug_name}_{cycle}.png', augmented)
+                        if not os.path.exists(f'augmented_styles/{style}/{name}'):
+                            os.makedirs(f'augmented_styles/{style}/{name}')
+                        cv2.imwrite(f'augmented_styles/{style}/{name}/{name}_{aug_name}_{cycle}.png', augmented)
 
                         # add sample to the dataset
                         self.samples.append(
-                            (augmented, self.class_labels_chars[name]))
+                            (augmented, self.class_labels_styles[style], self.class_labels_chars[name]))
 
-                        print(f'samples: {samples}, name: {name}')
+                        print(f'style: {style}, samples: {samples}, name: {name}')
                         self.clear()
 
                         stop, augmentations, cnt, cycle, samples = self.check_break(augmentations, cnt, cycle,
@@ -454,12 +451,53 @@ class Augmenter:
                             char_batch = []
                             break
 
+        if self.dataset is 'monkbrill':
+            if not os.path.exists(f'augmented_monkbrill/'):
+                os.mkdir(f'augmented_monkbrill/')
+            licycle = itertools.cycle(augmentations)
+            self.load_batches(self.images)
+            for char in self.batch_list:
+                cnt = 1
+                cycle = 1
+                stop = False
+                if len(self.batch_list[char]) > 0:
+                    char_batch = self.batch_list[char]
+                else:
+                    stop = True
+                if not self.supplement_original_samples:
+                    samples = 0
+                elif self.supplement_original_samples and not stop:
+                    _, _, samples = random.choice(char_batch)
+                while not stop:
+                    augmentation = next(licycle)
+                    image, name, _ = random.choice(char_batch)
+
+                    # augment, resize, invert, create name
+                    augmented, aug_name = self.finalize_augmented_image(augmentation, image)
+                    # create dir if not exists
+                    if not os.path.exists(f'augmented_monkbrill/{name}'):
+                        os.makedirs(f'augmented_monkbrill/{name}')
+                    cv2.imwrite(f'augmented_monkbrill/{name}/{name}_{aug_name}_{cycle}.png', augmented)
+
+                    # add sample to the dataset
+                    self.samples.append(
+                        (augmented, self.class_labels_chars[name]))
+
+                    print(f'samples: {samples}, name: {name}')
+                    self.clear()
+
+                    stop, augmentations, cnt, cycle, samples = self.check_break(augmentations, cnt, cycle,
+                                                                                samples)
+                    if stop:
+                        char_batch = []
+                        break
+
         print("All samples generated successfully")
         return self.samples
 
 
 def main():
-    A = Augmenter(dataset='styles', samples_per_char=100, supplement_original_samples=False)
+    A = Augmenter(dataset='monkbrill', samples_per_char=100, supplement_original_samples=False)
     dataset = A.augment()  # dataset is a list filled with tuples: (image, class_label)
 
 
