@@ -8,6 +8,10 @@ from qumran_seagulls.types import *
 min_persistence = 170
 debug = False
 
+def call_lineSeg(image):
+    cropped_lines = line_segm_astar.main(image)
+    return cropped_lines
+
 
 def astar(image, start, end, avg_dist):
     """Returns a list of tuples as a path from the given start to the given end in the given maze"""
