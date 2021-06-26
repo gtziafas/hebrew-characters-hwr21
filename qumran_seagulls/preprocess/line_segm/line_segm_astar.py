@@ -135,7 +135,7 @@ def astar(image, start, end, avg_dist):
 
 def segment_img(image):
     h, w = np.shape(image)
-    minima = get_sorted_minima_with_probs(image, min_persistence=min_persistence, axis=1)
+    minima = get_sorted_minima(image, min_persistence=min_persistence, axis=1)
     all_paths = []
     path = []
 
