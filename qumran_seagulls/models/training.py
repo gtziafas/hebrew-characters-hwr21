@@ -46,6 +46,60 @@ def eval_epoch(model: nn.Module, dl: DataLoader, criterion: nn.Module) -> Metric
     return {'loss': round(epoch_loss, 5), 'accuracy': round(accuracy, 4)}
 
 
+def train_epoch_multitask(model: nn.Module, dl: DataLoader, optim: Optimizer, criterion: nn.Module, kappa: float = 3) -> Metrics: 
+    model.train()
+    epoch_loss, total_correct_labels, total_correct_styles = 0., 0, 0
+    for (x, y), s in dl:
+        # forward
+        label_preds, style_preds = model.forward(x)
+        label_loss = criterion(label_preds, y)
+        style_loss = criterion(style_preds, s)
+        loss = label_loss + style_loss * kappa
+
+        # backprop
+        loss.backward()
+        optim.step()
+        optim.zero_grad()
+        
+        # update
+        epoch_loss += loss.item()
+        total_correct_labels += (label_preds.argmax(dim=-1) == y).sum().item()
+        total_correct_styles += (style_preds.argmax(dim=-1) == s).sum().item()
+
+    epoch_loss /= len(dl)
+    label_accuracy = total_correct_labels / len(dl.dataset)
+    style_accuracy = total_correct_styles / len(dl.dataset)
+    return {'loss': round(epoch_loss, 5), 
+            'label_accuracy': round(label_accuracy, 4),
+            'style_accuracy': round(style_accuracy, 4)
+            }
+
+
+@torch.no_grad()
+def eval_epoch_multitask(model: nn.Module, dl: DataLoader, criterion: nn.Module) -> Metrics: 
+    model.eval()
+    epoch_loss, total_correct_labels, total_correct_styles = 0., 0, 0
+    for (x, y), s in dl:
+        # forward
+        label_preds, style_preds = model.forward(x)
+        label_loss = criterion(label_preds, y)
+        style_loss = criterion(style_preds, s)
+        loss = label_loss + style_loss
+
+        # update
+        epoch_loss += loss.item()
+        total_correct_labels += (label_preds.argmax(dim=-1) == y).sum().item()
+        total_correct_styles += (style_preds.argmax(dim=-1) == s).sum().item()
+
+    epoch_loss /= len(dl)
+    label_accuracy = total_correct_labels / len(dl.dataset)
+    style_accuracy = total_correct_styles / len(dl.dataset)
+    return {'loss': round(epoch_loss, 5), 
+            'label_accuracy': round(label_accuracy, 4),
+            'style_accuracy': round(style_accuracy, 4)
+            }
+
+
 class Trainer(ABC):
     def __init__(self, 
             model: nn.Module, 
@@ -53,7 +107,8 @@ class Trainer(ABC):
             optimizer: Optimizer, 
             criterion: nn.Module, 
             target_metric: str,
-            early_stopping: Maybe[int] = None):
+            early_stopping: Maybe[int] = None,
+            multitask: bool = False):
         self.model = model
         self.optimizer = optimizer
         self.criterion = criterion
@@ -62,6 +117,8 @@ class Trainer(ABC):
         self.target_metric = target_metric
         self.trained_epochs = 0
         self.early_stop_patience = early_stopping
+        self.train_fn = train_epoch if not multitask else train_epoch_multitask
+        self.eval_fn = eval_epoch if not multitask else eval_epoch_multitask
 
     def iterate(self, num_epochs: int, print_log: bool = False, with_save: Maybe[str] = None) -> Metrics:
         best = {self.target_metric: 0.}
@@ -78,7 +135,7 @@ class Trainer(ABC):
                     torch.save(self.model.state_dict(), with_save)
 
                 if self.test_dl is not None:
-                    self.logs['test'].append({'epoch': epoch+1, **eval_epoch(self.model, self.test_dl, self.criterion)})
+                    self.logs['test'].append({'epoch': epoch+1, **self.eval_fn(self.model, self.test_dl, self.criterion)})
 
             else:
                 patience -= 1
@@ -93,8 +150,8 @@ class Trainer(ABC):
         current_epoch = len(self.logs['train']) + 1
 
         # train - eval this epoch
-        self.logs['train'].append({'epoch': current_epoch, **train_epoch(self.model, self.train_dl, self.optimizer, self.criterion)})
-        self.logs['dev'].append({'epoch': current_epoch, **eval_epoch(self.model, self.dev_dl, self.criterion)})
+        self.logs['train'].append({'epoch': current_epoch, **self.train_fn(self.model, self.train_dl, self.optimizer, self.criterion)})
+        self.logs['dev'].append({'epoch': current_epoch, **self.eval_fn(self.model, self.dev_dl, self.criterion)})
         
         # print if wanted
         if print_log:
