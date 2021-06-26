@@ -57,19 +57,19 @@ def main(data_root: str,
 
 
     print('Loading / Preprocessing dataset...')
-    ds = MonkbrillDataset(data_root, with_preproc=crop_boxes_fixed(FIXED_SHAPE))
+    train_ds = MonkbrillDataset(data_root + '/train', with_preproc=crop_boxes_fixed(FIXED_SHAPE))
+    dev_ds = MonkbrillDataset(data_root + '/dev', with_preproc=crop_boxes_fixed(FIXED_SHAPE))
     test_ds = MonkbrillDataset(test_root, with_preproc=crop_boxes_fixed(FIXED_SHAPE)) if test_root is not None else None
 
     if not kfold:
-        # train once in a 80%-20% train-dev split
-        dev_size = int(.2 * len(ds))
-        train_ds, dev_ds = random_split(ds, [len(ds) - dev_size, dev_size], generator=SEED)
-        print('Training on random train-dev split...')
+        # train once in a fixed train-dev split
+        print('Training on fixed train-dev splits...')
         best = train(train_ds, dev_ds, test_ds)
-        print(f'Results random split: {best}')
+        print(f'Results splits: {best}')
 
     else:
         # k-fold cross validation 
+        ds = train_ds + dev_ds
         _kfold = KFold(n_splits=kfold, shuffle=True, random_state=14).split(ds)
         accu = 0.
         print(f'{kfold}-fold cross validation...')
