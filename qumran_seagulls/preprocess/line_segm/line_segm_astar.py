@@ -3,14 +3,11 @@ from tqdm import tqdm  # progress bar
 
 from qumran_seagulls.preprocess.shared_astar_funcs.astar_funcs import *
 from qumran_seagulls.types import *
+from qumran_seagulls.utils import thresh_invert
 
 
 min_persistence = 170
 debug = False
-
-def call_lineSeg(image):
-    cropped_lines = line_segm_astar.main(image)
-    return cropped_lines
 
 
 def astar(image, start, end, avg_dist):
@@ -159,28 +156,16 @@ def segment_img(image):
     return all_paths
 
 
-def main(argv):
-    example_img_path = argv
-    example_img = (255 - cv2.imread(str(example_img_path), cv2.IMREAD_GRAYSCALE))/255
+def line_segm_fn(image):
+    example_img = (255 - image)/255
     paths = segment_img(example_img)
     if debug:
         draw_lines(example_img_path, paths, dirname="extracted_images")
         plot_lines(example_img, paths)
     cropped_lines = crop_lines(example_img, paths, debug=debug)
-#     cropped_lines_dir_path = os.path.splitext('data/extracted_images/' + os.path.split(example_img_path)[1])[0].replace('-binarized','')
-
-#     if not os.path.exists(cropped_lines_dir_path):
-#         os.makedirs(cropped_lines_dir_path, exist_ok=True)
-#     for idx, cropped_line in enumerate(cropped_lines):
-#         filename = cropped_lines_dir_path + "/line_" + str(idx) + ".jpg"
-#         cv2.imwrite(filename, 255 - cropped_line)
     return cropped_lines
 
 
 if __name__ == '__main__':
     main(sys.argv[1])
 
-
-# command:
-# python3 -m qumran_seagulls.preprocess.line_segm.line_segm_astar data/images/P106-Fg002-R-C01-R01-binarized.jpg
-# from project root folder
