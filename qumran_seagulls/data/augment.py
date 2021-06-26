@@ -56,17 +56,25 @@ class Augmenter:
         self.path_habbakuk_font = 'dump/'
         self.path_monkbril = '/home/niels/Documents/UNI/Master/Hand Writing Recognition/hebrew-characters-hwr21/data/monkbrill'
         self.path_styles = '/home/niels/Documents/UNI/Master/Hand Writing Recognition/hebrew-characters-hwr21/data/styles/characters'
-        self.images = self.load_styles() if dataset is 'styles' else self.load_habbakuk()
+        self.images = self.load_images()
         self.clear = lambda: os.system('clear')
         # we want 300 samples per class
         self.samples_per_class = samples_per_char
         # imgaug augmentations:
         self.elastic_transform = iaa.ElasticTransformation(alpha=(5, 30), sigma=(3, 7))
         self.perspective_transform = iaa.PerspectiveTransform(scale=(0.05, 0.10))
-        self.affine_transform = iaa.Affine(translate_percent={"x": (-0.2, 0.2), "y": (-0.2, 0.2)}, scale=(0.5, 1.5))
+        self.affine_transform = iaa.Affine(translate_percent={"x": (-0.15, 0.15), "y": (-0.15, 0.15)}, scale=(0.5, 1.2))
         # cv2 augmentations:
         self.kernel_range_dilate_dilate = (5, 10)
         self.kernel_range_dilate_erode = (4, 6)
+
+    def load_images(self):
+        if self.dataset is 'styles':
+            return self.load_styles()
+        if self.dataset is 'habbakuk':
+            return self.load_habbakuk()
+        if self.dataset is 'monkbrill':
+            return self.load_monkbrill()
 
     '''
     Load the samples from styles folder, as a list containing tuples: (name, image, amount of samples in Monkbrill)'''
@@ -96,6 +104,7 @@ class Augmenter:
     '''
 
     def load_monkbrill(self):
+        image_list = []
         for subdir, dirs, files in os.walk(self.path_monkbril):
             for file in files:
                 im = Image.open(os.path.join(subdir, file))
@@ -104,6 +113,9 @@ class Augmenter:
 
                 label = self.class_labels_chars[subdir.split('monkbrill/', 1)[1]]
                 self.samples.append((im, label))
+                if self.dataset is 'monkbrill':
+                    image_list.append(self.load(f'{os.path.join(subdir, file)}'))
+        return image_list
 
     '''
     A helper function that is used to load and convert images
@@ -123,6 +135,14 @@ class Augmenter:
             samples = len([item for item in os.listdir(f'{self.path_styles}/{style}/{filename}')])
             # add samples to self.samples
             # self.samples.append((cv2.resize(im, (70, 70)), self.class_labels_styles[style]))
+            return im, filename, samples
+        elif self.dataset is 'monkbrill':
+            filename = filename.split('/navis')[0].split('monkbrill/')[1]
+            samples = 0
+            try:
+                samples = len([item for item in os.listdir(f'{self.path_monkbril}/{filename}/')])
+            except:
+                print(f'could not load: {filename}')
             return im, filename, samples
         else:
             sys.exit('No dataset specified')
@@ -392,6 +412,47 @@ class Augmenter:
                             if stop:
                                 char_batch = []
                                 break
+        if self.dataset is 'monkbrill':
+            if not os.path.exists(f'augmented_monkbrill/'):
+                os.mkdir(f'augmented_monkbrill/')
+            old_name = None
+            char_batch = []
+            licycle = itertools.cycle(augmentations)
+            for item in self.images:
+                image, name, samples = item
+                if not self.supplement_original_samples:
+                    samples = 0
+                if name == old_name or len(char_batch) == 0:
+                    char_batch.append(item)
+                    old_name = name
+                else:
+                    # augment one batch
+                    cnt = 1
+                    cycle = 1
+                    stop = False
+                    while not stop:
+                        augmentation = next(licycle)
+                        image, name, _ = random.choice(char_batch)
+
+                        # augment, resize, invert, create name
+                        augmented, aug_name = self.finalize_augmented_image(augmentation, image)
+                        # create dir if not exists
+                        if not os.path.exists(f'augmented_monkbrill/{name}'):
+                            os.makedirs(f'augmented_monkbrill/{name}')
+                        cv2.imwrite(f'augmented_monkbrill/{name}/{name}_{aug_name}_{cycle}.png', augmented)
+
+                        # add sample to the dataset
+                        self.samples.append(
+                            (augmented, self.class_labels_chars[name]))
+
+                        print(f'samples: {samples}, name: {name}')
+                        self.clear()
+
+                        stop, augmentations, cnt, cycle, samples = self.check_break(augmentations, cnt, cycle,
+                                                                                    samples)
+                        if stop:
+                            char_batch = []
+                            break
 
         print("All samples generated successfully")
         return self.samples
