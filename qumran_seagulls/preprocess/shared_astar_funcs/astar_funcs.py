@@ -170,9 +170,6 @@ def get_sorted_minima_with_probs(image: np.array, min_persistence, axis, debug=F
     filtered_minima = [t[0] for t in minima if t[1] > min_persistence]
     sorted_minima = sorted(filtered_minima)
 
-    print(f"sortedm {sorted_minima}")
-    print(f"")
-
     if debug:
         plt.imshow(image)
         plt.plot(probs[0, :], h * 2 - 100 * max_probs, label="max_probs_interp")
