@@ -19,7 +19,7 @@ show_max = True  # show only the max prob in each point
 min_persistence = 0.4
 
 debug = True
-
+# i = 0 anim frame index
 
 def crop_characters_from_line(line_img: np.ndarray, coords: List[int]) -> List[np.ndarray]:
     """
@@ -67,6 +67,7 @@ def get_sliding_window_probs(img: np.ndarray, cnn: BaselineCNN, step_size: int =
 
 
 def get_sliding_window_probs_with_cropping(img: np.ndarray, cnn: BaselineCNN, step_size: int = 10) -> np.ndarray:
+    # global i
     h, w = np.shape(img)
     # N_CLASSES + 1 because we will use the first row for the window position
     predictions = np.zeros((N_CLASSES + 1, int(w / step_size) + 1))
@@ -84,10 +85,14 @@ def get_sliding_window_probs_with_cropping(img: np.ndarray, cnn: BaselineCNN, st
         # get the center of gravity
         (cog_y, cog_x) = center_of_mass(window)
 
+        # If there is no ink in the window, just center it
+        if np.isnan(cog_y):
+            cog_y = h/2
+        if np.isnan(cog_x):
+            cog_x = h/2
 
         cog_x = int(np.clip(cog_x, 40, h-40))
         cog_y = int(np.clip(cog_y, 40, h-40))
-
 
         # window position, this is the x position needed for the plot, it represents the center of the window
         predictions[0, int(window_right_edge / step_size)] = window_right_edge - h + cog_x
@@ -97,10 +102,13 @@ def get_sliding_window_probs_with_cropping(img: np.ndarray, cnn: BaselineCNN, st
         box_left = cog_x - np.ceil(75/2).astype(int)
         box_right = cog_x + np.floor(75/2).astype(int)
 
+        # plt.clf()
         # plt.imshow(window)
         # plt.plot(cog_x, cog_y, "x", c="red")
         # plt.gca().add_patch(Rectangle((box_left, box_top), 75, 75, linewidth=1, edgecolor='r', facecolor='none'))
-        # plt.show()
+        # plt.savefig(f'anim{i}.png')
+        # plt.clf()
+        # i+=1
 
         window = window[box_top:box_bottom, box_left:box_right]
 
