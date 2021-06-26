@@ -135,7 +135,7 @@ def segment_img(image):
     all_paths = []
     path = []
 
-    print(f"Identified {len(minima)} lines. Image width: {w}. Computing segmentation paths...")
+#     print(f"Identified {len(minima)} lines. Image width: {w}. Computing segmentation paths...")
 
     # adding extra line in path
     for i in range(image.shape[1]):
@@ -143,7 +143,7 @@ def segment_img(image):
     all_paths.append(path)
 
     for pos in range(1, len(minima)):
-        print(f"Computing path for line {pos}/{len(minima)}...")
+#         print(f"Computing path for line {pos}/{len(minima)}...")
         start = (0, minima[pos])
         end = (w - 1, minima[pos])
         avg_dist = (minima[pos] - minima[pos - 1]) / 2
@@ -156,7 +156,6 @@ def segment_img(image):
 
 
 def main(argv):
-    print(argv)
     example_img_path = argv
     example_img = (255 - cv2.imread(str(example_img_path), cv2.IMREAD_GRAYSCALE))/255
     paths = segment_img(example_img)
@@ -164,13 +163,14 @@ def main(argv):
         draw_lines(example_img_path, paths, dirname="extracted_images")
         plot_lines(example_img, paths)
     cropped_lines = crop_lines(example_img, paths, debug=debug)
-    cropped_lines_dir_path = os.path.splitext('data/extracted_images/' + os.path.split(example_img_path)[1])[0].replace('-binarized','')
+#     cropped_lines_dir_path = os.path.splitext('data/extracted_images/' + os.path.split(example_img_path)[1])[0].replace('-binarized','')
 
-    if not os.path.exists(cropped_lines_dir_path):
-        os.makedirs(cropped_lines_dir_path, exist_ok=True)
-    for idx, cropped_line in enumerate(cropped_lines):
-        filename = cropped_lines_dir_path + "/line_" + str(idx) + ".jpg"
-        cv2.imwrite(filename, 255 - cropped_line)
+#     if not os.path.exists(cropped_lines_dir_path):
+#         os.makedirs(cropped_lines_dir_path, exist_ok=True)
+#     for idx, cropped_line in enumerate(cropped_lines):
+#         filename = cropped_lines_dir_path + "/line_" + str(idx) + ".jpg"
+#         cv2.imwrite(filename, 255 - cropped_line)
+    return cropped_lines
 
 
 if __name__ == '__main__':
