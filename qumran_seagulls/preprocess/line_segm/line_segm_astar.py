@@ -9,7 +9,7 @@ min_persistence = 170
 debug = False
 
 def call_lineSeg(image):
-    cropped_lines = line_segm_astar.main(image)
+    cropped_lines = main(image)
     return cropped_lines
 
 
@@ -159,9 +159,9 @@ def segment_img(image):
     return all_paths
 
 
-def main(argv):
-    example_img_path = argv
-    example_img = (255 - cv2.imread(str(example_img_path), cv2.IMREAD_GRAYSCALE))/255
+def main(image):
+    #example_img_path = argv
+    example_img = (255-image)/255
     paths = segment_img(example_img)
     if debug:
         draw_lines(example_img_path, paths, dirname="extracted_images")
