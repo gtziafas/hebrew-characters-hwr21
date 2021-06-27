@@ -10,6 +10,7 @@ from qumran_seagulls.preprocess.shared_astar_funcs.persistence1d import RunPersi
 debug = True
 min_persistence = 250
 
+i = 0
 
 def crop_straight_from_minima(image, minima):
     h, w = np.shape(image)
@@ -22,11 +23,14 @@ def crop_straight_from_minima(image, minima):
 
 
 def segment_img(image):
+    global i
     h, w = np.shape(image)
 
     histogram = numpy.sum(image, axis=1)
     print(f"max {np.max(histogram)}")
     if debug:
+        plt.figure(i)
+        i+=1
         plt.imshow(image)
         plt.plot(histogram, range(len(histogram)))
 
@@ -40,10 +44,9 @@ def segment_img(image):
     print(len(sorted_minima))
     print(sorted_minima)
 
-    plt.plot(histogram[sorted_minima], sorted_minima, "x")
-    plt.hlines(y=sorted_minima, xmin=0, xmax=w, color="green")
-
     if debug:
+        plt.plot(histogram[sorted_minima], sorted_minima, "x")
+        plt.hlines(y=sorted_minima, xmin=0, xmax=w, color="green")
         plt.show()
 
     # crop_straight_from_minima(image, sorted_minima)
