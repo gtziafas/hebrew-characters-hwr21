@@ -122,7 +122,7 @@ def astar(image, start, end, avg_dist):
 
 def segment_img(image, window_size=(75, 75)):
     h, w = np.shape(image)
-    minima = get_sorted_minima_with_probs(image, min_persistence=min_persistence, axis=0, window_size=window_size, debug=debug)
+    minima = get_sorted_minima(image, min_persistence=min_persistence, axis=0)
     all_paths = []
     path = []
 
@@ -176,14 +176,14 @@ def main_with_plotting(img_path):
     if debug:
         draw_lines(img_path, paths, dirname="extracted_char")
         plot_lines(example_img, paths)
-    # cropped_lines = crop_lines(example_img, paths, debug=False)
-    # cropped_lines_dir_path = os.path.splitext('data/extracted_char/' + os.path.split(img_path)[1])[0]
-    #
-    # if not os.path.exists(cropped_lines_dir_path):
-    #     os.makedirs(cropped_lines_dir_path, exist_ok=True)
-    # for idx, cropped_line in enumerate(cropped_lines):
-    #     filename = cropped_lines_dir_path + "/char_" + str(idx) + ".jpg"
-    #     cv2.imwrite(filename, 255 - cropped_line)
+    cropped_lines = crop_lines(example_img, paths, debug=False)
+    cropped_lines_dir_path = os.path.splitext('data/extracted_char/' + os.path.split(img_path)[1])[0]
+
+    if not os.path.exists(cropped_lines_dir_path):
+        os.makedirs(cropped_lines_dir_path, exist_ok=True)
+    for idx, cropped_line in enumerate(cropped_lines):
+        filename = cropped_lines_dir_path + "/char_" + str(idx) + ".jpg"
+        cv2.imwrite(filename, 255 - cropped_line)
 
 
 if __name__ == '__main__':

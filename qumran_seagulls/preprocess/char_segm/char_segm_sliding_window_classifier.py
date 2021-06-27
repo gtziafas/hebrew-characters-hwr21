@@ -256,7 +256,7 @@ def main():
 
     line_imgs = []
     for i in range(1, 14):
-        line_imgs.append(0xff - cv2.imread(str(f"data/lines_cropped_ground_truth/{file_id}/line_{i}.jpg"), cv2.IMREAD_GRAYSCALE))
+        line_imgs.append(0xff - cv2.imread(str(f"data/lines_cropped/{file_id}/line_{i}.jpg"), cv2.IMREAD_GRAYSCALE))
 
     asc_desc_offsets = get_asc_desc_offsets(line_imgs, threshold=0.05)
 
