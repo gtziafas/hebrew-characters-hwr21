@@ -36,24 +36,27 @@ def get_sorted_minima_scaled(image: np.array, min_persistence, axis) -> List[int
     return sorted_minima
 
 
-def crop_out_whitespace(image: np.array) -> np.array:
+def crop_out_whitespace(image: np.array) -> Maybe[np.array]:
     """
     based on https://stackoverflow.com/a/59636960/13200217
     """
     to_crop = image.copy()
 
     blur = cv2.GaussianBlur(image, (25, 25), 0)
-    thresh = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)[1]
 
     noise_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
-    opening = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, noise_kernel, iterations=2)
+    opening = cv2.morphologyEx(blur, cv2.MORPH_OPEN, noise_kernel, iterations=2)
     close_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (7, 7))
     close = cv2.morphologyEx(opening, cv2.MORPH_CLOSE, close_kernel, iterations=3)
 
     # Find enclosing bounding box and crop ROI
     coords = cv2.findNonZero(close)
     x, y, w, h = cv2.boundingRect(coords)
-    return to_crop[y:y + h, x:x + w]
+    cropped = to_crop[y:y + h, x:x + w]
+    if np.sum(cropped) == 0:
+        return None
+    else:
+        return to_crop[y:y + h, x:x + w]
 
 
 def blocker_dist(child, image, debug):
