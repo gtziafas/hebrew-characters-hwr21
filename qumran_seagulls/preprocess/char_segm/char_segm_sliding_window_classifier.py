@@ -18,8 +18,9 @@ input_dim = (75, 75)  # same
 show_max = True  # show only the max prob in each point
 min_persistence = 0.4
 
-debug = True
+debug = False
 # i = 0 anim frame index
+
 
 def crop_characters_from_line(line_img: np.ndarray, coords: List[int]) -> List[np.ndarray]:
     """
@@ -120,7 +121,7 @@ def get_sliding_window_probs_with_cropping(img: np.ndarray, cnn: BaselineCNN, st
     idx = np.argwhere(np.all(predictions[..., :] == 0, axis=0))
     predictions = np.delete(predictions, idx, axis=1)
 
-    print(f"predictions matrix:\n{predictions}")
+    # print(f"predictions matrix:\n{predictions}")
 
     return predictions
 
