@@ -11,7 +11,7 @@ from torch.nn import CrossEntropyLoss
 from torch.utils.data import random_split
 from sklearn.model_selection import KFold
 
-ROOT_FOLDER = './data/monkbrill'
+ROOT_FOLDER = './data/monkbrill_splits'
 
 FIXED_SHAPE = (75, 75)
 
@@ -50,7 +50,7 @@ def main(data_root: str,
             model.load_pretrained(load_path)
         optim = AdamW(model.parameters(), lr=lr, weight_decay=wd)
         criterion = CrossEntropyLoss(reduction='mean')
-        #criterion = FuzzyLoss(num_classes=27, mass_redistribution=0.3)#, softmax=TaylorSoftmax(order=4))
+        #criterion = FuzzyLoss(num_classes=27, mass_redistribution=0.2)#, softmax=TaylorSoftmax(order=4))
         trainer = Trainer(model, (train_dl, dev_dl, test_dl), optim, criterion, target_metric="accuracy", early_stopping=early_stopping)
         
         return trainer.iterate(num_epochs, with_save=save_path, print_log=print_log)
@@ -69,7 +69,7 @@ def main(data_root: str,
 
     else:
         # k-fold cross validation 
-        ds = train_ds + dev_ds
+        ds = train_ds.dataset + dev_ds.dataset
         _kfold = KFold(n_splits=kfold, shuffle=True, random_state=14).split(ds)
         accu = 0.
         print(f'{kfold}-fold cross validation...')

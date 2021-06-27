@@ -161,20 +161,15 @@ def segment_img(image):
 
 def main(image):
     #example_img_path = argv
-    example_img = (255-image)/255
+    example_img = thresh_invert(image)/255
     paths = segment_img(example_img)
     if debug:
-        draw_lines(example_img_path, paths, dirname="extracted_lines")
+        draw_lines(example_img_path, paths, dirname="extracted_images")
         plot_lines(example_img, paths)
     cropped_lines = crop_lines(example_img, paths, debug=debug)
-#     cropped_lines_dir_path = os.path.splitext('data/extracted_lines/' + os.path.split(example_img_path)[1])[0].replace('-binarized','')
 
-#     if not os.path.exists(cropped_lines_dir_path):
-#         os.makedirs(cropped_lines_dir_path, exist_ok=True)
-#     for idx, cropped_line in enumerate(cropped_lines):
-#         filename = cropped_lines_dir_path + "/line_" + str(idx) + ".jpg"
-#         cv2.imwrite(filename, 255 - cropped_line)
-    return cropped_lines
+    return [thresh_invert(line.astype(np.uint8)) for line in cropped_lines]
+
 
 
 if __name__ == '__main__':

@@ -159,6 +159,42 @@ def crop_boxes_fixed(desired_shape: Tuple[int, int]) -> Callable[[List[array]], 
     return _crop_boxes_fixed
 
 
+def center_of_gravities(desired_shape: Tuple[int, int]) -> Callable[[List[array]], List[array]]:
+    H, W = desired_shape
+
+    def _center_of_gravities(windows: List[array]) -> List[array]:
+        windows = thresh_invert_many(windows)
+
+        # find contours for each large image
+        contours = [cv2.findContours(i, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0] for i in windows]
+
+        # remove contours with zero area
+        contours = [[c for c in cs if cv2.contourArea(c) > 0 ] for cs in contours]
+        windows = [w for i, w in enumerate(windows) if len(contours[i]) > 0]
+        contours = [cs for cs in contours if len(cs) > 0]
+
+        # compute center of gravity by averaging moments
+        moments = [[cv2.moments(c) for c in cs] for cs in contours]
+        centers = [[(int(M['m10'] / M['m00']), int(M['m01'] / M['m00'])) for M in moms] for moms in moments]
+        cxs = [[c[0] for c in cs] for cs in centers]
+        cys = [[c[1] for c in cs] for cs in centers]
+        cxs = [int(sum(cx)/len(cx)) for cx in cxs]
+        cys = [int(sum(cy)/len(cy)) for cy in cys]
+        centers = [(cx, cy) for cx, cy in zip(cxs, cys)]
+
+        for idx, center in enumerate(centers):
+            image = windows[idx]
+            height, width = image.shape
+            cx = max(0, center[0] - min(W, width) // 2)
+            cy = max(0, center[1] - min(H, height) // 2)
+            box = Box(cx, cy, min(W, width), min(H, height))
+            windows[idx] = crop_box(image, box)
+
+        return pad_with_frame(windows, (H, W))
+
+    return _center_of_gravities
+
+
 def resize(desired_shape: Tuple[int, int]) -> Callable[[List[array]], List[array]]:
 
     def _resize(imgs: List[array]) -> List[array]:

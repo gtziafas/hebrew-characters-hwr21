@@ -74,7 +74,7 @@ def main(data_root: str,
                 model.load_pretrained(load_path)
             else:
                 model.load_char_model(load_path)
-                
+
         optim = AdamW(model.parameters(), lr=lr, weight_decay=wd)
         criterion = CrossEntropyLoss(reduction='mean')
         #criterion = FuzzyLoss(num_classes=27, mass_redistribution=0.3)#, softmax=TaylorSoftmax(order=4))
@@ -86,10 +86,8 @@ def main(data_root: str,
 
     print('Loading / Preprocessing dataset...')
     if not checkpoint:
-        ds = StylesDataset(data_root, with_preproc=crop_boxes_fixed(FIXED_SHAPE))
-        # 80%-20% random train-dev split
-        dev_size = int(.2 * len(ds))
-        train_ds, dev_ds = random_split(ds, [len(ds) - dev_size, dev_size], generator=SEED)
+        train_ds = StylesDataset(data_root + '/train', with_preproc=crop_boxes_fixed(FIXED_SHAPE))
+        dev_ds = StylesDataset(data_root + '/dev', with_preproc=crop_boxes_fixed(FIXED_SHAPE))
         test_ds = StylesDataset(test_root, with_preproc=crop_boxes_fixed(FIXED_SHAPE)) if test_root is not None else None
 
     else:
@@ -106,12 +104,13 @@ def main(data_root: str,
 
     elif not kfold:
         # train once in a 80%-20% train-dev split
-        print('Training on random train-dev split...')
+        print('Training on fixed train-dev split...')
         best = train(train_ds, dev_ds, test_ds)
-        print(f'Results random split: {best}')
+        print(f'Results split: {best}')
 
     else:
         # k-fold cross validation 
+        ds = train_ds.dataset + dev_ds.dataset
         _kfold = KFold(n_splits=kfold, shuffle=True, random_state=14).split(ds)
         accu = 0.
         print(f'{kfold}-fold cross validation...')
