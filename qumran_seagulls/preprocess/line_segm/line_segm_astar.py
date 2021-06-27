@@ -140,7 +140,7 @@ def segment_img(image):
     all_paths = []
     path = []
 
-#     print(f"Identified {len(minima)} lines. Image width: {w}. Computing segmentation paths...")
+    print(f"Identified {len(minima)} lines. Image width: {w}. Computing segmentation paths...")
 
     # adding extra line in path
     for i in range(image.shape[1]):
@@ -148,7 +148,7 @@ def segment_img(image):
     all_paths.append(path)
 
     for pos in range(1, len(minima)):
-#         print(f"Computing path for line {pos}/{len(minima)}...")
+        print(f"Computing path for line {pos}/{len(minima)}...")
         start = (0, minima[pos])
         end = (w - 1, minima[pos])
         avg_dist = (minima[pos] - minima[pos - 1]) / 2
