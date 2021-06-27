@@ -10,8 +10,7 @@ debug = False
 
 def call_lineSeg(image):
     cropped_lines = main(image)
-    tight_lines = [crop_out_whitespace(img) for img in cropped_lines]
-    return tight_lines
+    return cropped_lines
 
 
 def astar(image, start, end, avg_dist):
@@ -140,13 +139,20 @@ def segment_img(image):
     h, w = np.shape(image)
     minima = get_sorted_minima(image, min_persistence=min_persistence, axis=1)
     all_paths = []
-    path = []
 
     print(f"Identified {len(minima)} lines. Image width: {w}. Computing segmentation paths...")
 
-    # adding extra line in path
-    for i in range(image.shape[1]):
-        path.append(tuple([i, 1]))
+    # adding extra line in path right at the end of the whitespace at the top of the img
+    ctr = 0
+    for i in range(h):
+        if np.sum(image[i, :]) <= 1.0:
+            ctr += 1
+        else:
+            break
+
+    path = []
+    for i in range(w):
+        path.append(tuple([i, ctr]))
     all_paths.append(path)
 
     for pos in range(1, len(minima)):
@@ -166,11 +172,11 @@ def main(image):
     example_img = thresh_invert(image)/255
     paths = segment_img(example_img)
     if debug:
-        draw_lines(example_img_path, paths, dirname="extracted_images")
         plot_lines(example_img, paths)
     cropped_lines = crop_lines(example_img, paths, debug=debug)
+    cropped_lines_tight = [crop_out_whitespace(img) for img in cropped_lines if img is not None]
 
-    return [thresh_invert(line.astype(np.uint8)) for line in cropped_lines]
+    return [thresh_invert(line.astype(np.uint8)) for line in cropped_lines_tight]
 
 
 def oldmain(example_img_path):
@@ -180,11 +186,7 @@ def oldmain(example_img_path):
         draw_lines(example_img_path, paths, dirname="extracted_images")
         plot_lines(example_img, paths)
     cropped_lines = crop_lines(example_img, paths, debug=debug)
-    for c in cropped_lines:
-        print(f"before crop {c.shape}")
-    cropped_lines_tight = [crop_out_whitespace(img) for img in cropped_lines]
-    for c in cropped_lines_tight:
-        print(f"after crop {c.shape}")
+    cropped_lines_tight = [crop_out_whitespace(img) for img in cropped_lines if img is not None]
     cropped_lines_dir_path = os.path.splitext('data/extracted_images/' + os.path.split(example_img_path)[1])[0].replace('-binarized','')
 
     if not os.path.exists(cropped_lines_dir_path):
