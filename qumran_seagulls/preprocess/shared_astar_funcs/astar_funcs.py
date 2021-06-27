@@ -42,8 +42,7 @@ def crop_out_whitespace(image: np.array) -> np.array:
     """
     to_crop = image.copy()
 
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    blur = cv2.GaussianBlur(gray, (25, 25), 0)
+    blur = cv2.GaussianBlur(image, (25, 25), 0)
     thresh = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)[1]
 
     noise_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
