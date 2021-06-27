@@ -108,3 +108,8 @@ if __name__ == "__main__":
 
     kwargs = vars(parser.parse_args())
     main(**kwargs)
+
+
+# command:
+# python3 -m qumran_seagulls.scripts.train_sliding_window_segment_classifier -e 15 -early 2 -bs 64 -lr 0.001 -wd 0.01 -kfold 10 -s data/saved_models/segmenter.pt
+# from project root folder
