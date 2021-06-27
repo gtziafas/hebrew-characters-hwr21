@@ -6,7 +6,7 @@ from qumran_seagulls.types import *
 from qumran_seagulls.preprocess.shared_astar_funcs.astar_funcs import get_sorted_minima_with_probs
 
 min_persistence = 30
-debug = True
+debug = False
 
 
 def astar(image, start, end, avg_dist):
