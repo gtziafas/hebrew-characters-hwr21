@@ -186,7 +186,7 @@ def oldmain(example_img_path):
         draw_lines(example_img_path, paths, dirname="extracted_images")
         plot_lines(example_img, paths)
     cropped_lines = crop_lines(example_img, paths, debug=debug)
-    cropped_lines_tight = [crop_out_whitespace(img) for img in cropped_lines if img is not None]
+    cropped_lines_tight = [crop_out_whitespace(img) for img in cropped_lines if crop_out_whitespace(img) is not None]
     cropped_lines_dir_path = os.path.splitext('data/extracted_images/' + os.path.split(example_img_path)[1])[0].replace('-binarized','')
 
     if not os.path.exists(cropped_lines_dir_path):
