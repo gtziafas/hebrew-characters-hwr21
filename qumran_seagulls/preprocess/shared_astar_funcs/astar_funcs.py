@@ -23,6 +23,19 @@ def get_sorted_minima(image: np.array, min_persistence, axis) -> List[int]:
     return sorted_minima
 
 
+def get_sorted_minima_scaled(image: np.array, min_persistence, axis) -> List[int]:
+    histogram = np.sum(image, axis=axis)
+
+    max_histogram_value = np.max(histogram)
+    scaled_min_persistence = min_persistence * max_histogram_value / 1000
+
+    extrema = RunPersistence(histogram)
+    minima = extrema[0::2]  # odd elements are minima
+    filtered_minima = [t[0] for t in minima if t[1] > scaled_min_persistence and histogram[t[0]] < 0.5 * max_histogram_value]
+    sorted_minima = sorted(filtered_minima)
+    return sorted_minima
+
+
 def blocker_dist(child, image, debug):
     d_x = []
     for new_pos in [1, -1]:
