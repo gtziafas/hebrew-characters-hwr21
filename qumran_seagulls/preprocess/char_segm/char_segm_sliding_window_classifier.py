@@ -67,7 +67,8 @@ def get_sliding_window_probs(img: np.ndarray, cnn: BaselineCNN, step_size: int =
     return predictions
 
 
-def get_sliding_window_probs_with_cropping(img: np.ndarray, cnn: BaselineCNN, step_size: int = 10) -> np.ndarray:
+def get_sliding_window_probs_with_cropping(img: np.ndarray, cnn: BaselineCNN, step_size: int = 10,
+                                           window_size=(75, 75)) -> np.ndarray:
     # global i
     h, w = np.shape(img)
     # N_CLASSES + 1 because we will use the first row for the window position
@@ -75,6 +76,8 @@ def get_sliding_window_probs_with_cropping(img: np.ndarray, cnn: BaselineCNN, st
 
     np.set_printoptions(edgeitems=30, linewidth=100000,
                         formatter=dict(float=lambda x: "%+.3f" % x))
+
+    window_h, window_w = window_size
 
     # starting from the right, we go left, until we hit the last square window
     for window_right_edge in range(w, h, -step_size):
@@ -98,10 +101,10 @@ def get_sliding_window_probs_with_cropping(img: np.ndarray, cnn: BaselineCNN, st
         # window position, this is the x position needed for the plot, it represents the center of the window
         predictions[0, int(window_right_edge / step_size)] = window_right_edge - h + cog_x
 
-        box_top = cog_y - np.ceil(75/2).astype(int)
-        box_bottom = cog_y + np.floor(75/2).astype(int)
-        box_left = cog_x - np.ceil(75/2).astype(int)
-        box_right = cog_x + np.floor(75/2).astype(int)
+        box_top = cog_y - np.ceil(window_h/2).astype(int)
+        box_bottom = cog_y + np.floor(window_h/2).astype(int)
+        box_left = cog_x - np.ceil(window_w/2).astype(int)
+        box_right = cog_x + np.floor(window_w/2).astype(int)
 
         # plt.clf()
         # plt.imshow(window)

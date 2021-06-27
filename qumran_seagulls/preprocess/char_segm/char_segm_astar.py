@@ -120,9 +120,9 @@ def astar(image, start, end, avg_dist):
             open_list.append(child)
 
 
-def segment_img(image):
+def segment_img(image, window_size=(75, 75)):
     h, w = np.shape(image)
-    minima = get_sorted_minima_with_probs(image, min_persistence=min_persistence, axis=0, debug=debug)
+    minima = get_sorted_minima_with_probs(image, min_persistence=min_persistence, axis=0, window_size=window_size, debug=debug)
     all_paths = []
     path = []
 
@@ -149,12 +149,12 @@ def segment_img(image):
     return all_paths
 
 
-def segment_characters(line: array) -> List[array]:
-    paths = segment_img(line)
+def segment_characters(line: array, window_size=(75, 75)) -> List[array]:
+    paths = segment_img(line, window_size=window_size)
     cropped_chars = crop_lines(line, paths, debug=False)
     chars = [c for c in cropped_chars if np.sum(c) > 200]
     # TODO: there is an issue where the first segmentation path is wrong:
-    chars = [c for c in chars if c.shape[1] < 3/4 * line.shape[1]] # hack
+    chars = [c for c in chars if c.shape[1] < 3/4 * line.shape[1]]  # hack
     print(f"Kept {len(chars)} characters after discarding ink blobs.")
     return chars
 

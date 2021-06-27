@@ -130,7 +130,7 @@ def crop_lines(image: np.ndarray, paths: List[List[Tuple[int]]], debug: bool):
     return cropped_lines
 
 
-def get_sorted_minima_with_probs(image: np.array, min_persistence, axis, debug=False) -> List[int]:
+def get_sorted_minima_with_probs(image: np.array, min_persistence, axis, window_size=(75,75), debug=False) -> List[int]:
     """
     Gets the sorted minima of the histogram, but the histogram is obtained by mixing with the ink projection
     with the probability that the current window is right on a character.
@@ -147,7 +147,7 @@ def get_sorted_minima_with_probs(image: np.array, min_persistence, axis, debug=F
 
     saved_cnn = monkbrill_with_between_class()
     saved_cnn.load_state_dict(torch.load("data/saved_models/segmenter.pt"))
-    probs = get_sliding_window_probs_with_cropping(image*255, cnn=saved_cnn, step_size=5)
+    probs = get_sliding_window_probs_with_cropping(image*255, cnn=saved_cnn, step_size=5, window_size=window_size)
 
     # Discard the first row (window center position) and the last row (probability of "between" class)
     # to get the max probability that the window is on a character
