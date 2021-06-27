@@ -41,6 +41,7 @@ LABEL_MAP = {None: 'nan', **{k: v for k, v in enumerate([
  'Yod',
  'Zayin',
  'between'])}}
+LABEL_MAP_INV = {v : k for k,v in LABEL_MAP.items()}
 
 STYLE_MAP = {None: 'nan', 0: 'Archaic', 1: 'Hasmonean', 2: 'Herodian'}
 

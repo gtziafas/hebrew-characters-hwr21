@@ -207,6 +207,8 @@ def resize(desired_shape: Tuple[int, int]) -> Callable[[List[array]], List[array
 
 #####  I/O utils #####
 from random import sample 
+import pandas as pd
+import pickle
 from math import ceil
 from tqdm import tqdm
 import subprocess
@@ -245,3 +247,46 @@ def create_splits_from_dir(root: str, folder: str, out_dir: str, file_ext: str =
     _do_split('train', train)
     _do_split('dev', dev)
     _do_split('test', test)
+
+
+def convert_ngrams_to_bigrams(table_path: str, save_path: Maybe[str] = None):
+    def _fix(char: str) -> str:
+        if char == 'Tsadi':
+            return 'Tsadi-medial'
+        elif char == 'Tasdi-final':
+            return 'Tsadi-final'
+        else:
+            return char
+
+    table = pd.read_csv(table_path)
+    names = table['Names'].tolist()
+    freqs = table['Frequencies'].tolist()
+    keep = {k: v for k, v in zip(names, freqs)}
+
+    # identify ngrams with n > 2
+    multi_pos = [i for i, n in enumerate(names) if len(n.split('_'))>2]
+
+    res = keep.copy()
+    for idx in multi_pos:
+        name = names[idx]
+        freq = freqs[idx]
+        tokens = name.split('_')
+        bigrams = ['_'.join([tokens[i], tokens[i+1]]) for i in range(len(tokens)-1)]
+        for bg in bigrams:
+            res[bg] = freq if bg not in res.keys() else res[bg] + freq
+
+    res = ({k: v for k, v in sorted(res.items()) if len(k.split('_'))==2})
+
+    trans = np.zeros((27, 27), dtype=float)
+    for k, v in res.items():
+        char1, char2 = k.split('_')
+        index1, index2 = LABEL_MAP_INV[_fix(char1)], LABEL_MAP_INV[_fix(char2)]
+        trans[index1, index2] = v
+
+    # normalize to convert to probabilies
+    trans /= trans.sum(axis=0)
+    
+    if save_path is not None:
+        pickle.dump(trans, open(save_path, 'wb'))
+    return trans
+
