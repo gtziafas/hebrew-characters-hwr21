@@ -2,15 +2,16 @@ import sys
 from tqdm import tqdm  # progress bar
 
 from qumran_seagulls.preprocess.shared_astar_funcs.astar_funcs import *
-from qumran_seagulls.types import *
-
+from qumran_seagulls.utils import thresh_invert
 
 min_persistence = 170
 debug = False
 
+
 def call_lineSeg(image):
     cropped_lines = main(image)
-    return cropped_lines
+    tight_lines = [crop_out_whitespace(img) for img in cropped_lines]
+    return tight_lines
 
 
 def astar(image, start, end, avg_dist):
