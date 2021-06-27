@@ -252,7 +252,7 @@ def main():
 
     line_imgs = []
     for i in range(1, 14):
-        line_imgs.append(0xff - cv2.imread(str(f"data/lines_cropped/{file_id}/line_{i}.jpg"), cv2.IMREAD_GRAYSCALE))
+        line_imgs.append(0xff - cv2.imread(str(f"data/lines_cropped_ground_truth/{file_id}/line_{i}.jpg"), cv2.IMREAD_GRAYSCALE))
 
     asc_desc_offsets = get_asc_desc_offsets(line_imgs, threshold=0.05)
 
@@ -261,7 +261,7 @@ def main():
         char_imgs = plot_sliding_window(line_img, saved_cnn, step_size=10, asc_desc_offset=asc_desc_offset)
         for idx, char_img in enumerate(char_imgs):
             print(f"line: {i} char: {idx} shape: {char_img.shape}")
-            dest_dir = f"data/chars_cropped/{file_id}/line_{i:02}/"
+            dest_dir = f"data/extracted_chars/{file_id}/line_{i:02}/"
             os.makedirs(dest_dir, exist_ok=True)
             plt.imsave(dest_dir + f"char_{idx:03}.jpg", char_img)
             # plt.imshow(char_img)

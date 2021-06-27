@@ -164,10 +164,10 @@ def main(image):
     example_img = (255-image)/255
     paths = segment_img(example_img)
     if debug:
-        draw_lines(example_img_path, paths, dirname="extracted_images")
+        draw_lines(example_img_path, paths, dirname="extracted_lines")
         plot_lines(example_img, paths)
     cropped_lines = crop_lines(example_img, paths, debug=debug)
-#     cropped_lines_dir_path = os.path.splitext('data/extracted_images/' + os.path.split(example_img_path)[1])[0].replace('-binarized','')
+#     cropped_lines_dir_path = os.path.splitext('data/extracted_lines/' + os.path.split(example_img_path)[1])[0].replace('-binarized','')
 
 #     if not os.path.exists(cropped_lines_dir_path):
 #         os.makedirs(cropped_lines_dir_path, exist_ok=True)
