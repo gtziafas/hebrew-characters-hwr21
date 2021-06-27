@@ -172,11 +172,10 @@ def get_sorted_minima_with_probs(image: np.array, min_persistence, axis, window_
 
     if debug:
         plt.imshow(image)
-        plt.plot(probs[0, :], h * 2 - 100 * max_probs, label="max_probs_interp")
-        plt.plot(probs[0, :], h * 2 - 100 * max_probs, ".", label="max_probs_interp")
+        plt.plot(probs[0, :], h * 2 - 100 * max_probs, label="max_probs")
+        plt.plot(probs[0, :], h * 2 - 100 * max_probs, ".", label="max_probs")
         plt.plot(h * 2 - histogram, label="Ink proj")
-        # plt.plot(h * 2 - max_probs_interp, label="max_probs_interp")
-        # plt.plot(h * 2 - mixed_histogram, label="Mix ink proj with probs")
+        plt.plot(h * 2 - mixed_histogram, label="mixed_histogram")
         plt.plot(sorted_minima, h*2 - mixed_histogram[sorted_minima], "x", c="red")
         plt.legend()
 
