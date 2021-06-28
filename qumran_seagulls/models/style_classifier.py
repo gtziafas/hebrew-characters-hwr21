@@ -50,4 +50,4 @@ class StyleClassifier(ABC):
 
 
 def default_style_classifier(device: str):
-    return StyleClassifier('checkpoints/cnn_styles.p', 'checkpoints/cnn_labels.p', device=device)
+    return StyleClassifier('checkpoints/cnn_styles.p', 'checkpoints/cnn_labels_augm.p', device=device)
