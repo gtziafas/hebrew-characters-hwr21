@@ -38,7 +38,8 @@ def main(data_root: str,
         ):
 
     # an independent function to init a model and train over some epochs for a given train-dev(-test) split
-    def train(train_ds: List[Character], dev_ds: List[Character], test_ds: Maybe[List[Character]]=None) -> Metrics:
+    def train(train_ds: List[Character], dev_ds: List[Character], test_ds: Maybe[List[Character]]=None, 
+            save_path: Maybe[str] = None, index: Maybe[int]=None) -> Metrics:
         train_dl = DataLoader(train_ds, shuffle=True, batch_size=batch_size, worker_init_fn=SEED, collate_fn=collate(device))
         dev_dl = DataLoader(dev_ds, shuffle=False, batch_size=batch_size, worker_init_fn=SEED, collate_fn=collate(device))
 
@@ -49,10 +50,12 @@ def main(data_root: str,
         if load_path is not None:
             model.load_pretrained(load_path)
         optim = AdamW(model.parameters(), lr=lr, weight_decay=wd)
-        criterion = CrossEntropyLoss(reduction='mean')
-        #criterion = FuzzyLoss(num_classes=27, mass_redistribution=0.2)#, softmax=TaylorSoftmax(order=4))
+        #criterion = CrossEntropyLoss(reduction='mean')
+        criterion = FuzzyLoss(num_classes=27, mass_redistribution=0.05)#, softmax=TaylorSoftmax(order=4))
         trainer = Trainer(model, (train_dl, dev_dl, test_dl), optim, criterion, target_metric="accuracy", early_stopping=early_stopping)
         
+        if index is not None and save_path is not None:
+            save_path = save_path.split('.')[0] + '_' + str(index) + '.p'
         return trainer.iterate(num_epochs, with_save=save_path, print_log=print_log)
 
 
@@ -64,7 +67,7 @@ def main(data_root: str,
     if not kfold:
         # train once in a fixed train-dev split
         print('Training on fixed train-dev splits...')
-        best = train(train_ds, dev_ds, test_ds)
+        best = train(train_ds, dev_ds, test_ds, save_path, None)
         print(f'Results splits: {best}')
 
     else:
@@ -76,7 +79,7 @@ def main(data_root: str,
         for iteration, (train_idces, dev_idces) in enumerate(_kfold):
             train_ds = [s for i, s in enumerate(ds) if i in train_idces]
             dev_ds = [s for i, s in enumerate(ds) if i in dev_idces]
-            best = train(train_ds, dev_ds, test_ds)
+            best = train(train_ds, dev_ds, test_ds, save_path=save_path, index=iteration)
             print(f'Results {kfold}-fold, iteration {iteration+1}: {best}')
             accu += best['accuracy']
         print(f'Average accuracy {kfold}-fold: {accu/kfold}')

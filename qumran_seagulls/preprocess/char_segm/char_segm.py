@@ -66,7 +66,7 @@ class CharacterSegmenter(ABC):
         # heuristic
         num_chars = crop.shape[1] // 75 + 1
         max_probs = [score.softmax(-1).max() for score in scores]
-        split_idces = sorted([max_probs.index(p) for p in sorted(max_probs, reverse=False)[:num_chars]])
+        split_idces = sorted([max_probs.index(p) for p in sorted(max_probs, reverse=False)[:num_chars-1]])
 
         if num_chars == 1:
             lhds = [scores.mean(0).softmax(-1)]
@@ -83,6 +83,7 @@ class CharacterSegmenter(ABC):
         line = remove_blobs(thresh_invert(line), area_thresh=10)
         crops = histogram_cleaning(line)
         all_windows = [create_windows(w) for w in crops]
+        crops = [cs for i, cs in enumerate(crops) if len(all_windows[i]) > 0]
         all_windows = [ws for ws in all_windows if len(ws) > 0]
 
         all_scores = [self.model.predict_scores(wins) for wins in all_windows]
@@ -92,7 +93,7 @@ class CharacterSegmenter(ABC):
 
         return [self.get_likelihoods(crop, scores) for crop, scores in zip(crops, all_scores)]
     
-    def visualize(self, line: array) -> List[List[array]]:
+    def debug(self, line: array) -> List[List[array]]:
         line = remove_blobs(thresh_invert(line), area_thresh=10)
         crops = histogram_cleaning(line)
         all_windows = [create_windows(w) for w in crops]
@@ -109,7 +110,7 @@ class CharacterSegmenter(ABC):
             # histogram = np.where(crop>0, 1, 0).sum(axis=0)
             for i, win in enumerate(windows):
                 print([LABEL_MAP[s.item()] for s in scores[i].topk(k=3).indices], [s for s in scores[i].softmax(-1).topk(k=3).values])
-                max_probs.append(scores[i].softmax(-1).max())
+                # max_probs.append(scores[i].softmax(-1).max())
                 # projections.append(histogram[i*10 : 50 + i*10].sum())
                 show(win)
             # from matplotlib import pyplot as plt

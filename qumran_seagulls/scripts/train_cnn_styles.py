@@ -61,7 +61,8 @@ def main(data_root: str,
     target_metric = 'accuracy' if not multi else 'style_accuracy'
 
     # an independent function to init a model and train over some epochs for a given train-dev(-test) split
-    def train(train_ds: List[Character], dev_ds: List[Character], test_ds: Maybe[List[Character]]=None) -> Metrics:
+    def train(train_ds: List[Character], dev_ds: List[Character], test_ds: Maybe[List[Character]]=None,
+                save_path: Maybe[str] = None, index: Maybe[int] = None) -> Metrics:
         train_dl = DataLoader(train_ds, shuffle=True, batch_size=batch_size, worker_init_fn=SEED, collate_fn=collator)
         dev_dl = DataLoader(dev_ds, shuffle=False, batch_size=batch_size, worker_init_fn=SEED, collate_fn=collator)
 
@@ -81,6 +82,8 @@ def main(data_root: str,
         trainer = Trainer(model, (train_dl, dev_dl, test_dl), optim, criterion, target_metric=target_metric, 
                 early_stopping=early_stopping, multitask=multi)
         
+        if index is not None and save_path is not None:
+            save_path = save_path.split('.')[0] + '_' + str(index) + '.p'
         return trainer.iterate(num_epochs, with_save=save_path, print_log=print_log)
 
 
@@ -117,7 +120,7 @@ def main(data_root: str,
         for iteration, (train_idces, dev_idces) in enumerate(_kfold):
             train_ds = [s for i, s in enumerate(ds) if i in train_idces]
             dev_ds = [s for i, s in enumerate(ds) if i in dev_idces]
-            best = train(train_ds, dev_ds, test_ds)
+            best = train(train_ds, dev_ds, test_ds, save_path, iteration)
             print(f'Results {kfold}-fold, iteration {iteration+1}: {best}')
             accu += best[target_metric]
         print(f'Average accuracy {kfold}-fold: {accu/kfold}')
