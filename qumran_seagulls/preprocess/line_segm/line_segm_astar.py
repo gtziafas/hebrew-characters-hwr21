@@ -4,7 +4,7 @@ from tqdm import tqdm  # progress bar
 from qumran_seagulls.preprocess.shared_astar_funcs.astar_funcs import *
 from qumran_seagulls.utils import thresh_invert
 
-min_persistence = 150
+min_persistence = 110
 debug = False
 
 

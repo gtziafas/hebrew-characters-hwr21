@@ -9,7 +9,7 @@ import numpy as np
 from qumran_seagulls.preprocess.shared_astar_funcs.persistence1d import RunPersistence
 
 debug = True
-min_persistence = 150
+min_persistence = 110
 
 i = 0
 
@@ -59,6 +59,7 @@ def main():
 
     for b in binarized_filenames:
         example_img_path = f"data/images/{b}"
+        print(example_img_path)
         example_img = (255 - cv2.imread(str(example_img_path), cv2.IMREAD_GRAYSCALE)) / 255
         print(f"sum {np.sum(example_img)}")
         segment_img(example_img)
