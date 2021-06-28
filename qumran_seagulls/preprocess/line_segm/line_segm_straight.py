@@ -1,4 +1,5 @@
 import os
+from math import sqrt
 
 import numpy
 import cv2
@@ -8,7 +9,7 @@ import numpy as np
 from qumran_seagulls.preprocess.shared_astar_funcs.persistence1d import RunPersistence
 
 debug = True
-min_persistence = 250
+min_persistence = 150
 
 i = 0
 
@@ -26,7 +27,8 @@ def segment_img(image):
     global i
     h, w = np.shape(image)
 
-    histogram = numpy.sum(image, axis=1)
+    blurred = cv2.blur(image, (15,15))
+    histogram = numpy.sum(blurred, axis=1)
     print(f"max {np.max(histogram)}")
     if debug:
         plt.figure(i)
@@ -35,7 +37,7 @@ def segment_img(image):
         plt.plot(histogram, range(len(histogram)))
 
     max_histogram_value = np.max(histogram)
-    scaled_min_persistence = min_persistence * max_histogram_value / 1000
+    scaled_min_persistence = min_persistence * sqrt(max_histogram_value) / 32
 
     extrema = RunPersistence(histogram)
     minima = extrema[0::2]  # odd elements are minima

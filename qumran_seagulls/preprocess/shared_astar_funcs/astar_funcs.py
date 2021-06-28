@@ -1,4 +1,5 @@
 import os
+from math import sqrt
 
 import cv2
 import matplotlib.pyplot as plt
@@ -24,10 +25,11 @@ def get_sorted_minima(image: np.array, min_persistence, axis) -> List[int]:
 
 
 def get_sorted_minima_scaled(image: np.array, min_persistence, axis) -> List[int]:
-    histogram = np.sum(image, axis=axis)
+    blurred = cv2.blur(image, (15,15))
+    histogram = np.sum(blurred, axis=axis)
 
     max_histogram_value = np.max(histogram)
-    scaled_min_persistence = min_persistence * max_histogram_value / 1000
+    scaled_min_persistence = min_persistence * sqrt(max_histogram_value) / 32
 
     extrema = RunPersistence(histogram)
     minima = extrema[0::2]  # odd elements are minima

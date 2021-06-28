@@ -4,8 +4,8 @@ from tqdm import tqdm  # progress bar
 from qumran_seagulls.preprocess.shared_astar_funcs.astar_funcs import *
 from qumran_seagulls.utils import thresh_invert
 
-min_persistence = 170
-debug = False
+min_persistence = 150
+debug = True
 
 
 def call_lineSeg(image):
@@ -137,7 +137,7 @@ def astar(image, start, end, avg_dist):
 
 def segment_img(image):
     h, w = np.shape(image)
-    minima = get_sorted_minima(image, min_persistence=min_persistence, axis=1)
+    minima = get_sorted_minima_scaled(image, min_persistence=min_persistence, axis=1)
     all_paths = []
 
     print(f"Identified {len(minima)} lines. Image width: {w}. Computing segmentation paths...")
