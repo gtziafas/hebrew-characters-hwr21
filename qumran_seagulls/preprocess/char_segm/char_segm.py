@@ -127,3 +127,7 @@ class CharacterSegmenter(ABC):
             plt.vlines(maxima, 0, 1, color="C3", linestyles='dotted')
             plt.grid(True)
             plt.show()
+
+
+def default_char_segm(device: str) -> CharacterSegmenter:
+    return CharacterSegmenter('checkpoints/cnn_labels_augm_fuzzy.p', device=device)
