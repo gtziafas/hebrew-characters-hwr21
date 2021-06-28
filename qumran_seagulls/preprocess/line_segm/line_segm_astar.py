@@ -5,7 +5,7 @@ from qumran_seagulls.preprocess.shared_astar_funcs.astar_funcs import *
 from qumran_seagulls.utils import thresh_invert
 
 min_persistence = 150
-debug = True
+debug = False
 
 
 def call_lineSeg(image):
