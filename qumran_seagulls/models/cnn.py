@@ -194,7 +194,7 @@ def monkbrill_with_between_class() -> BaselineCNN:
 
 def default_cnn_styles() -> BaselineCNN:
     return BaselineCNN(num_classes=3, dropout_rates=[0., 0.1, 0.5], inp_shape=(75, 75), num_features=1024,
-                       with_preproc=crop_boxes_fixed((75, 75)))
+                       with_preproc=center_of_gravities((75, 75)))
 
 def concat_cnn_styles() -> ConcatCNN:
     return ConcatCNN(num_classes=3, dropout_rates=[0., 0.1, 0.5], inp_shape=(75, 75), num_features=1024,

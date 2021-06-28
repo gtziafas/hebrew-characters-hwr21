@@ -25,6 +25,8 @@ class StyleClassifier(ABC):
 
     def predict(self, chars: List[array], debug=False) -> str:
         char_labels = self.char_label_cnn.predict_scores(chars, self.device).argmax(-1).cpu().tolist()
+        if debug:
+            print(f"char labels: {char_labels}")
 
         # get classification scores for each character
         scores = self.cnn.predict_scores(chars, self.device).cpu()

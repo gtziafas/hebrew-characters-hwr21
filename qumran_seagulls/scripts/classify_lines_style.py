@@ -20,7 +20,7 @@ def classify_lines_style(lines: List[array], debug=False):
 
 
 if __name__ == '__main__':
-    file_id = "P168-Fg016-R-C01-R01"
+    file_id = "P106-Fg002-R-C01-R01"
 
     line_imgs = []
     for i in range(1, 4):
@@ -28,3 +28,7 @@ if __name__ == '__main__':
     print(f"imgs shapes {[l.shape for l in line_imgs]}")
 
     print(classify_lines_style(line_imgs, debug=True))
+
+# command:
+# python3 -m qumran_seagulls.scripts.classify_lines_style
+# from project root folder
