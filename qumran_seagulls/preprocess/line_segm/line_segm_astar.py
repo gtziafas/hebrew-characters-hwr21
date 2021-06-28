@@ -1,4 +1,7 @@
 import sys
+
+import matplotlib.pyplot as plt
+import numpy as np
 from tqdm import tqdm  # progress bar
 
 from qumran_seagulls.preprocess.shared_astar_funcs.astar_funcs import *
@@ -137,6 +140,16 @@ def astar(image, start, end, avg_dist):
 
 def segment_img(image):
     h, w = np.shape(image)
+
+    # P423-1-Fg002-R-C02-R01-binarized.jpg touches the edge, we don't want that as it breaks A*
+    # so just add some 15px padding
+    if np.sum(image[:, 0]) > 10:
+        image = np.concatenate((np.zeros((h, 15)), image), axis=1)
+        h, w = np.shape(image)
+        if debug:
+            print("added padding")
+            plt.imshow(image)
+            plt.show()
     minima = get_sorted_minima_scaled(image, min_persistence=min_persistence, axis=1)
     all_paths = []
 
@@ -183,7 +196,7 @@ def oldmain(example_img_path):
     example_img = (255 - cv2.imread(str(example_img_path), cv2.IMREAD_GRAYSCALE))/255
     paths = segment_img(example_img)
     if debug:
-        draw_lines(example_img_path, paths, dirname="extracted_images")
+        # draw_lines(example_img_path, paths, dirname="extracted_images")
         plot_lines(example_img, paths)
     cropped_lines = crop_lines(example_img, paths, debug=debug)
     cropped_lines_tight = [crop_out_whitespace(img) for img in cropped_lines if crop_out_whitespace(img) is not None]
