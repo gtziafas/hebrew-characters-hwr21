@@ -9,18 +9,19 @@ from qumran_seagulls.types import *
 
 
 def classify_lines_style(lines: List[array], debug=False):
-    style_classifier = StyleClassifier(load_path="data/saved_models/cnn_styles.p", device="cpu")
+    style_classifier = StyleClassifier(styles_load_path="data/saved_models/cnn_styles.p", device="cpu",
+                                       labels_load_path="data/saved_models/cnn_labels.p")
     chars_in_img = []
     for line in lines:
         segm_chars = segment_characters(line)
         chars_in_img += segm_chars
 
-    prediction = style_classifier.predict([(c).astype("uint8") for c in chars_in_img], debug=debug)
+    prediction = style_classifier.predict([c.astype("uint8") for c in chars_in_img], debug=debug)
     return prediction
 
 
 if __name__ == '__main__':
-    file_id = "P106-Fg002-R-C01-R01"
+    file_id = "P342-Fg001-R-C01-R01"
 
     line_imgs = []
     for i in range(1, 4):
