@@ -14,7 +14,7 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def main(path_to_test_imgs: str):
     # fetch images
-    image_files = [f for f in os.listdir(path_to_test_imgs) if 'bin' in f]
+    image_files = [f for f in os.listdir(path_to_test_imgs)]
     images = [cv2.imread(os.path.join(path_to_test_imgs, file), 0) for file in image_files]
 
     # init sub-modules
