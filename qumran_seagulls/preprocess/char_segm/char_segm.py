@@ -67,7 +67,7 @@ class CharacterSegmenter(ABC):
     def get_likelihoods(self, crop: array, scores: Tensor) -> Tensor:
         # heuristic
         num_chars = crop.shape[1] // self.width_thresh + 1
-        max_probs = [score.softmax(-1).max() for score in scores]
+        max_probs = [score.softmax(-1).max().item() for score in scores]
         minima = find_peaks(-array(max_probs), prominence=0.01)[0]
         
         minima = [m for m in minima if m not in [1, len(max_probs)-2]]
