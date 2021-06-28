@@ -1,4 +1,5 @@
 from qumran_seagulls.types import *
+from qumran_seagulls.utils import thresh_invert_many
 from qumran_seagulls.models.cnn import default_cnn_monkbrill, default_cnn_styles
 from qumran_seagulls.preprocess.char_segm.char_segm_astar import segment_characters
 
@@ -13,9 +14,9 @@ class StyleClassifier(ABC):
     def __init__(self, styles_load_path: str, labels_load_path: str, device: str, vote_weights: List[float] = VOTE_WEIGHTS):
         self.vote_weights = vote_weights
         self.cnn_styles = default_cnn_styles().eval().to(device)
-        self.cnn_styles.load_pretrained(load_path)
+        self.cnn_styles.load_pretrained(styles_load_path)
         self.cnn_labels = default_cnn_monkbrill().eval().to(device)
-        self.cnn_labels.load_pretrained(char_label_cnn_load_path)
+        self.cnn_labels.load_pretrained(labels_load_path)
         self.device = device
         self.out_map = {0: 'Archaic', 1: 'Hasmonean', 2: 'Herodian'}
 
@@ -43,8 +44,9 @@ class StyleClassifier(ABC):
         return self.out_map[np.argmax([arch_votes, hasm_votes, herod_votes], axis=-1)]
 
     def __call__(self, lines: List[array], debug: bool = False) -> str:
+        lines = [l/0xff for l in thresh_invert_many(lines)]
         all_chars = sum(list(map(segment_characters, lines)), [])
-        return self.predict([(c).astype("uint8") for c in all_chars], debug=debug)
+        return self.predict([(c * 0xff).astype("uint8") for c in all_chars], debug=debug)
 
 
 def default_style_classifier(device: str):

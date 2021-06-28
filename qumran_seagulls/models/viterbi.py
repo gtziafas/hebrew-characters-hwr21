@@ -10,18 +10,23 @@ class Viterbi(object):
                  T_eos: Tensor):
         super().__init__()
         self.num_classes = num_classes
-        self.transition = transition_matrix      # K x K
+        self.transition = transition_matrix     # K x K
         self.T_sos = T_sos 
         self.T_eos = T_eos        
 
     @torch.no_grad()
     def __call__(self, likelihoods: Tensor) -> Tuple[List[int], Tensor, float]:
         T = len(likelihoods) # sequence length
+        if T == 1:
+            # return only from input transition
+            _q = likelihoods[0, :] * self.T_sos
+            return [_q.argmax().item()], _q, _q.max().item()
+
         K = self.num_classes
 
         qs = torch.empty((T, K), device=likelihoods.device)         
         paths = torch.empty((T-1, K), dtype=int, device=qs.device)
-        qs[0, :] = likelihoods[0, :] * self.T_sos     
+        qs[0, :] = likelihoods[0, :] * self.T_sos 
         for step in range(1, T):
             # @todo: find the broadcasting magic
             for j in range(K):
@@ -43,5 +48,5 @@ def default_viterbi(device: str):
     # remove transition probs from corresponding medial and final characters
     T_sos = torch.tensor([1/23 if i not in [8, 12, 15, 22] else 0 for i in range(27)], device=device)
     T_eos = torch.tensor([1/24 if i not in [11, 13, 23] else 0 for i in range(27)], device=device)
-    
-    return Viterbi(num_classes=27, transition_matrix=torch.load('checkpoints/trans.p'), T_sos = T_sos, T_eos = T_eos)
+    T = torch.tensor(torch.load('checkpoints/trans.p'), device=device)
+    return Viterbi(num_classes=27, transition_matrix=T, T_sos = T_sos, T_eos = T_eos)

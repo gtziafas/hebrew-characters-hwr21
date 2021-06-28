@@ -1,7 +1,9 @@
-from qumran_seagulls.models.cnn import default_cnn_monkbrill
+from qumran_seagulls.types import *
 from qumran_seagulls.utils import *
+from qumran_seagulls.models.cnn import default_cnn_monkbrill
 import torch
 
+from scipy.signal import find_peaks
 from math import ceil
 import numpy as np
     
@@ -47,7 +49,7 @@ def histogram_cleaning(line: array, width_thresh: int = 15, span_thresh: int = 1
 
 
 
-def create_windows(image: array, win_width: int = 50, win_step: int = 15) -> List[array]:
+def create_windows(image: array, win_width: int = 50, win_step: int = 10) -> List[array]:
     num_windows = ceil((image.shape[1] - win_width) / win_step)
     windows = [image[:, i*win_step : win_width + i*win_step] for i in range(num_windows)]
     return [w for w in windows if w.min() == 0]
@@ -55,8 +57,8 @@ def create_windows(image: array, win_width: int = 50, win_step: int = 15) -> Lis
     
 
 class CharacterSegmenter(ABC):
-    def __init__(self, load_path: str, device: str, width_thresh: int = 75):
-        self.model = default_cnn_monkbrill()
+    def __init__(self, load_path: str, device: str, width_thresh: int = 64):
+        self.model = default_cnn_monkbrill().eval().to(device)
         self.model.load_pretrained(load_path)
         self.device = device
         self.width_thresh = width_thresh
@@ -64,20 +66,26 @@ class CharacterSegmenter(ABC):
 
     def get_likelihoods(self, crop: array, scores: Tensor) -> Tensor:
         # heuristic
-        num_chars = crop.shape[1] // 75 + 1
+        num_chars = crop.shape[1] // self.width_thresh + 1
         max_probs = [score.softmax(-1).max() for score in scores]
-        split_idces = sorted([max_probs.index(p) for p in sorted(max_probs, reverse=False)[:num_chars-1]])
-
-        if num_chars == 1:
-            lhds = [scores.mean(0).softmax(-1)]
+        minima = find_peaks(-array(max_probs), prominence=0.01)[0]
+        
+        minima = [m for m in minima if m not in [1, len(max_probs)-2]]
+        if len(minima) > num_chars-1:
+            values = [max_probs[i] for i in minima]
+            minima = [minima[i] for i, p  in enumerate(values) if p in sorted(values)[:num_chars-1]]
+        
+        if num_chars == 1 or not len(minima):
+            lkhds = [scores.mean(0).softmax(-1)]
 
         else:
-            lhds = [scores[:split_idces[0]].mean(0)]
-            lhds.extend([scores[split_idces[i] + 1 : idx].mean(0) for i, idx in enumerate(split_idces[1:-1])])
-            lhds.append(scores[split_idces[-1]:].mean(0))
-            lhds = [l.softmax(-1) for l in lhds if not torch.isnan(l[0])]
+            # average over sliding windows for each char range
+            lkhds = [scores[:minima[0]].mean(0)]
+            lkhds.extend([scores[m+1: minima[i+1]].mean(0) for i, m in enumerate(minima[:-1])])
+            lkhds.append(scores[minima[-1] + 1:].mean(0))
+            lkhds = [l.softmax(-1) for l in lkhds if not torch.isnan(l[0])]
 
-        return torch.stack(lhds)
+        return torch.stack(lkhds).to(self.device)
 
     def __call__(self, line: array) -> List[Tensor]:
         line = remove_blobs(thresh_invert(line), area_thresh=10)
@@ -85,40 +93,37 @@ class CharacterSegmenter(ABC):
         all_windows = [create_windows(w) for w in crops]
         crops = [cs for i, cs in enumerate(crops) if len(all_windows[i]) > 0]
         all_windows = [ws for ws in all_windows if len(ws) > 0]
-
-        all_scores = [self.model.predict_scores(wins) for wins in all_windows]
-
-        for crop, windows, scores in zip(crops, all_windows, all_scores):
-            print(self.get_likelihoods(crop, scores))
-
+        all_scores = [self.model.predict_scores(wins, self.device) for wins in all_windows]
         return [self.get_likelihoods(crop, scores) for crop, scores in zip(crops, all_scores)]
     
     def debug(self, line: array) -> List[List[array]]:
+        from matplotlib import pyplot as plt
         line = remove_blobs(thresh_invert(line), area_thresh=10)
         crops = histogram_cleaning(line)
         all_windows = [create_windows(w) for w in crops]
         all_windows = [ws for ws in all_windows if len(ws) > 0]
 
-        all_scores = [self.model.predict_scores(wins) for wins in all_windows]
+        all_scores = [self.model.predict_scores(wins, self.device) for wins in all_windows]
 
         cv2.imshow('line', line)
         for crop, windows, scores in zip(crops, all_windows, all_scores):
-            print(f'New crop... {crop.shape}')
-            max_probs = []; projections = []
-            cv2.imshow('crop', crop)
-            print(self.get_likelihoods(crop, scores))
-            # histogram = np.where(crop>0, 1, 0).sum(axis=0)
-            for i, win in enumerate(windows):
-                print([LABEL_MAP[s.item()] for s in scores[i].topk(k=3).indices], [s for s in scores[i].softmax(-1).topk(k=3).values])
-                # max_probs.append(scores[i].softmax(-1).max())
-                # projections.append(histogram[i*10 : 50 + i*10].sum())
-                show(win)
-            # from matplotlib import pyplot as plt
-            # fig, (ax1, ax2) = plt.subplots(2, sharex=False) 
-            # ax1.imshow(crop)
-            # ax2.plot(max_probs)
-            # ax2.hlines(min(0.8, max(max_probs)-0.1), 0, len(max_probs), color="C1")
-            # ax2.grid(True)
-            # # ax2.plot([p/max(projections) for p in projections])
-            # plt.show() 
-    
+            num_chars = crop.shape[1] // 64 + 1
+            max_probs = [score.softmax(-1).max().item() for score in scores]
+            minima = find_peaks(-np.array(max_probs), prominence=0.01)[0]
+            maxima = find_peaks(np.array(max_probs))[0]
+            print(crop.shape, num_chars)
+
+            print('num windows', len(max_probs))
+            print('num minima before', len(minima))
+            minima = [m for m in minima if m not in [1, len(max_probs)-2]]
+            if len(minima) > num_chars-1:
+                values = [max_probs[i] for i in minima]
+                minima = [minima[i] for i, p  in enumerate(values) if p in sorted(values)[:num_chars-1]]
+                
+            print(minima)
+            print(max_probs)
+            plt.plot(max_probs)
+            plt.vlines(minima, 0, 1, color="C1")
+            plt.vlines(maxima, 0, 1, color="C3", linestyles='dotted')
+            plt.grid(True)
+            plt.show()

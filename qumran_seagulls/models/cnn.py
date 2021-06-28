@@ -51,8 +51,7 @@ class BaselineCNN(nn.Module):
     @no_grad()
     def predict_scores(self, imgs: List[array], device: str='cpu') -> Tensor:
         self.eval()
-        # filtered = filter_large(self.inp_shape)(imgs)
-        # padded = pad_with_frame(filtered, self.inp_shape)
+        # we assume images are already thresholded and inverted
         imgs = self.with_preproc(list(imgs)) if self.with_preproc is not None else imgs
         tensorized = stack([tensor(img / 0xff, dtype=floatt, device=device) for img in imgs])
         scores = self.forward(tensorized.unsqueeze(1))

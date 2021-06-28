@@ -110,7 +110,7 @@ def filter_large(desired_shape: Tuple[int, int]) -> Callable[[List[array]], List
 
 def crop_boxes_dynamic(imgs: List[array]) -> List[array]:
     # threshold and invert
-    imgs = thresh_invert_many(imgs)
+    #imgs = thresh_invert_many(imgs)
     
     # find contours for each image
     contours = [cv2.findContours(i, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0] for i in imgs]
@@ -130,7 +130,7 @@ def crop_boxes_fixed(desired_shape: Tuple[int, int]) -> Callable[[List[array]], 
 
     def _crop_boxes_fixed(imgs: List[array]) -> List[array]:
         # threshold and invert
-        imgs = thresh_invert_many(imgs)
+        #imgs = thresh_invert_many(imgs)
 
         # identify images larger than desired resolution
         large_idces = [idx for idx, i in enumerate(imgs) if i.shape[0] > H or i.shape[1] > W]
@@ -163,7 +163,7 @@ def center_of_gravities(desired_shape: Tuple[int, int]) -> Callable[[List[array]
     H, W = desired_shape
 
     def _center_of_gravities(windows: List[array]) -> List[array]:
-        windows = thresh_invert_many(windows)
+        #windows = thresh_invert_many(windows)
 
         # find contours for each large image
         contours = [cv2.findContours(i, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0] for i in windows]
