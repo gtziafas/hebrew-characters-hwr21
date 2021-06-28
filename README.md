@@ -4,7 +4,7 @@ Code for Hebrew character and style recognition for the Dead See Scrolls dataset
 ## Installing dependencies
 Project works with Python 3.8. To install the dependencies run the following commands in the project root.
 ```bash
-python3 -m venv venv
+virtualenv --python=/usr/bin/python3.8 venv
 . venv/bin/activate
 pip install -r REQUIREMENTS.txt
 ```
